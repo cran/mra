@@ -233,5 +233,7 @@ for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } # E
 dipper.cjs <- F.cjs.estim( ~x2+x3+x4+x5+x6, ~x1+x2+x3+x4+x5, dipper.histories )
 print(dipper.cjs)
 }
+
 \keyword{ survival }% at least one, from doc/KEYWORDS
+
 \keyword{ models }% __ONLY ONE__ keyword per line

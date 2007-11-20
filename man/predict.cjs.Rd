@@ -7,7 +7,7 @@
   values for all active cells in the model.
 }
 \usage{
-predict.cjs(object, ...)
+\method{predict}{cjs}(object, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

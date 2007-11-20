@@ -9,7 +9,7 @@
 }
 
 \usage{
-plot.cjs(x, type="n", ci = TRUE, smooth = TRUE, occasions = -1, 
+\method{plot}{cjs}(x, type="n", ci = TRUE, smooth = TRUE, occasions = -1, 
 	animals = -1, smubass = 5, ...)
 }
 

@@ -46,4 +46,3 @@ dipper.cjs <- F.cjs.estim( capture=~xy$x[,,2]+xy$x[,,3]+xy$x[,,4]+xy$x[,,5]+xy$x
 print(dipper.cjs)
 }
 \keyword{ models }
-

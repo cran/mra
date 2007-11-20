@@ -7,7 +7,7 @@
 }
 
 \usage{ 
-lines.cjs( x, what="n", animals=-1, occasions=-1, ... )
+\method{lines}{cjs}( x, what="n", animals=-1, occasions=-1, \dots )
 }
 
 \arguments{

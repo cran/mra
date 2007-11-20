@@ -7,7 +7,7 @@
   of a CJS capture-recapture model.
 }
 \usage{
-residuals.cjs(object, type="pearson", ...)
+\method{residuals}{cjs}(object, type="pearson", ...)
 }
 
 %- maybe also 'usage' for other objects documented here.

@@ -7,7 +7,7 @@
   Print method for Cormack-Jolly-Seber (CJS) models estimated by F.cjs.estim().
 }
 \usage{
-print.cjs(x, alpha=c(0.05,0.01), ...)
+\method{print}{cjs}(x, alpha=c(0.05,0.01), ...)
 }
 \arguments{
   \item{x}{ An object of class "cjs" produced by F.cjs.estim()}

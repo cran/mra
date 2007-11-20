@@ -6,7 +6,7 @@
   Print the estimates of N from a CJS object in a nice format.
 }
 \usage{ 
-print.nhat(x, ...)
+\method{print}{nhat}(x, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
