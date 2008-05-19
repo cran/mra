@@ -8,7 +8,7 @@ if( !is.null(object$residuals) ){
 if( !is.null(object$fitted) ){
 	cellmeans <- object$fitted
 } else {
-	cellmeans <- predict.cr( cjsobj )
+	cellmeans <- predict.cjs( object )
 }
 
 #	Compute residuals
