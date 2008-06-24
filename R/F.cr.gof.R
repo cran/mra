@@ -7,8 +7,9 @@ if( !inherits( cjsobj, "cjs" ) ){
 
 
 e <- cjsobj$fitted
-o <- cjsobj$histories
+o <- as.numeric( cjsobj$histories >= 1 )
 p <- length(cjsobj$parameters)
+active <- !is.na(e)
 
 if( cjsobj$resid.type == "pearson" ){
 	r <- cjsobj$residuals
@@ -58,26 +59,26 @@ or.p <- 2 * pnorm(abs(or.z), lower.tail=FALSE)
 
 
 #	T4: sum over individuals
-o.j <- apply( o, 2, sum, na.rm = TRUE )
+o.j <- apply( o*active, 2, sum, na.rm = TRUE )
 e.j <- apply( e, 2, sum, na.rm = TRUE )
 u.j <- as.numeric( e.j >= rule.of.thumb )
 c.j <- ((o.j-e.j)*(o.j-e.j))/e.j
 c.j[ u.j == 0 ] <- NA
 t4.chi <- sum( c.j, na.rm=TRUE )
-t4.df <- sum( u.j ) - 1
+t4.df <- sum( u.j, na.rm=TRUE ) - 1
 t4.table <- rbind( o.j, e.j, c.j, u.j )
 dimnames( t4.table )[[1]] <- c("obs", "exp", "contrib", "use?")
 t4.p <- ifelse( t4.df > 0, 1-pchisq(t4.chi,t4.df), NA )
 
 
 #	T5: sum over occasions
-o.j <- apply( o, 1, sum, na.rm = TRUE )
+o.j <- apply( o*active, 1, sum, na.rm = TRUE )
 e.j <- apply( e, 1, sum, na.rm = TRUE )
 u.j <- as.numeric( e.j >= rule.of.thumb )
 c.j <- ((o.j-e.j)*(o.j-e.j))/e.j
 c.j[ u.j == 0 ] <- NA
 t5.chi <- sum( c.j, na.rm=TRUE )
-t5.df <- sum( u.j ) - 1
+t5.df <- sum( u.j, na.rm=TRUE ) - 1
 t5.table <- rbind( o.j, e.j, c.j, u.j )
 dimnames( t5.table )[[1]] <- c("obs", "exp", "contrib", "use?")
 t5.p <- ifelse( t5.df > 0, 1-pchisq(t5.chi,t5.df), NA )
@@ -104,7 +105,7 @@ c.j <- (o.j - e.j)^2 / (e.j*(1-e.j/n.j))
 u.j <- as.numeric( e.j >= rule.of.thumb )
 c.j[ u.j == 0 ] <- NA
 HL.chi <- sum( c.j, na.rm=TRUE )
-HL.df <- sum( u.j ) - 2
+HL.df <- sum( u.j, na.rm=TRUE ) - 2
 HL.table <- rbind( o.j, e.j, c.j, u.j )
 dimnames( HL.table )[[1]] <- c("obs", "exp", "contrib", "use?")
 HL.p <- ifelse( HL.df > 0, 1-pchisq(HL.chi,HL.df), NA )

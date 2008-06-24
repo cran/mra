@@ -48,6 +48,8 @@ if( inherits(x,"cjsgof") ){
 
 	cat(paste("\nOverall goodness of fit results:\n"))
 	cat(paste( format( c("            ", "    Osius-Rojek:", "Hosmer-Lemeshow:", "  M&R ChiSquare:") ), 
+		   format( c("Statistic", round(x$or.chi,  4), round(x$HL.chi,  4), round(x$gof.chi,  4) )),
+		   format( c("df", x$or.df, x$HL.df, x$gof.df )),
 		   format( c("p", round(x$or.pvalue,  4), round(x$HL.pvalue,  4), round(x$gof.pvalue,  4) )),
 		   format( c("  ", or.stars, HL.stars, mr.stars )),
 		   "\n", sep="\t")) 

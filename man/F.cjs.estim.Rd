@@ -188,12 +188,13 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{n.hat.conf}{Confidence level of intervals on \code{n.hat}}
   \item{nhat.v.meth}{Code for method used to compute variance of \code{n.hat}}
   \item{num.caught}{Vector of observed number of animals captured each occasion.  Length NS.}
-  \item{fitted}{Matrix of fitted values for the capture histories.  Size NAN X NS.  Cell (i,j)
+  \item{fitted}{Matrix of fitted values for the capture histories.  Size NAN X NS.  
+    Cell (i,j)
 	is expected value of capture indicator in cell (i,j) of \code{histories} matrix.}
-  \item{residuals}{Matrix of Pearson residuals = ($h_{ij} - \psi_{ij})^2 / \psi_{ij}$, where 
-	$\psi_{ij}$ is fitted value for cell (i,j) and $h_{ij}$ is the capture indicator for 
-	animal i at occasion j.  Size NAN X NS. See help for "overall test" in 
-	documentation for \code{F.cjs.gof} for a description of $\psi_{ij}$. }
+  \item{residuals}{Matrix of Pearson residuals = \eqn{(h(ij) - Psi(ij))^2 / Psi(ij)}, where 
+	Psi(ij) is the expected (or fitted) value for cell (i,j) and h(ij) is the capture indicator for 
+	animal i at occasion j.  This matrix has size NAN X NS. See parts pertaining to the "overall test" in 
+	documentation for \code{F.cjs.gof} for a description of Psi(ij). }
   \item{resid.type}{String describing the type of residuals computed.  Currently, only Pearson
 	residuals are returned.}
 }

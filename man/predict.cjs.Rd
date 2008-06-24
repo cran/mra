@@ -26,7 +26,7 @@
 	
 }
 \details{
-	The only components of \code{cjsobj} needed are \code{\$histories}, \code{\$p.hat}, \code{\$s.hat}
+	The only components of \code{cjsobj} needed are \code{$histories}, \code{$p.hat}, \code{$s.hat}
 }
 \author{ Trent McDonald, WEST Inc., tmcdonald@west-inc.com }
 \seealso{ \code{\link{F.cjs.estim}}, \code{\link{F.cjs.gof}} }

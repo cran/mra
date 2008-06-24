@@ -2078,7 +2078,7 @@ subroutine marray_gof(nan, ns, p_hat, s_hat, fit_table, fit_chisq, fit_chidf, re
     
 	WRITE(6,700) fit_chisq, fit_chidf
 700 FORMAT( " ======================================="// &
- 	    	" Overall GOF Test on M-array Chisq =",F14.5, " on ", F7.0, " df")
+            " Overall GOF Test on M-array Chisq =",F14.5, " on ", F7.0, " df")
     
 end subroutine
 
@@ -2188,7 +2188,7 @@ subroutine HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
     
 	WRITE(6,700) HL_chi, HL_df
 700 FORMAT(     " =============================================="// &
- 	    	    " Hosmer-Lemeshow GOF Chisq =",F14.5, " on ", F7.0, " df")
+                " Hosmer-Lemeshow GOF Chisq =",F14.5, " on ", F7.0, " df")
     
     
 end subroutine
@@ -2412,7 +2412,7 @@ subroutine t5_gof(nan, ns, cell_expected, fit_table, fit_chisq, fit_chidf )
     
 	WRITE(6,700) fit_chisq, fit_chidf
 700 FORMAT( " ======================================="// &
- 	    	" Test 5 GOF Chisq =",F14.5, " on ", F7.0, " df")
+            " Test 5 GOF Chisq =",F14.5, " on ", F7.0, " df")
     
 end subroutine
 
@@ -2583,7 +2583,7 @@ subroutine t4_gof(nan,ns,p_hat,s_hat, resid_type, fit_table, fit_chisq, fit_chid
 
 	WRITE(6,700) fit_chisq, fit_chidf
 700 FORMAT( " ======================================="// &
- 	    	" Test 4 GOF Chisq =",F14.5, " on ", F7.0, " df")
+            " Test 4 GOF Chisq =",F14.5, " on ", F7.0, " df")
     
     
 end subroutine

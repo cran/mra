@@ -38,7 +38,7 @@
 }
 
 \details{
-  In almost all cases, a CJS model fitted by F.cjs.estim already has a \$residuals component.  This 
+  In almost all cases, a CJS model fitted by F.cjs.estim already has a \code{$residuals} component.  This 
   routine either extracts this component, or computes residuals of the component if not found.
 
   Observed component (o(ij)) in formulas above is the capture indicator for animal i during occasion j.  If animal i 
