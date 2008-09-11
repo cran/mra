@@ -20,13 +20,14 @@ cat("Call:\n")
 print(x$aux$call)
 cat("\n")
 
-cat(paste( format( c("Capture var", names(cap.coef))), 
-	format( c("Est", cap.coef) ),  
-	format( c("SE", se.cap) ),
-	format( c("Survival var", names(sur.coef))), 
-	format( c("Est", sur.coef) ), 
-	format( c("SE", se.sur) ),
-	"\n", sep="\t"))
+cat(paste( format( c(" Capture var", names(cap.coef))), 
+	format( c(" Est", cap.coef) ),  
+	format( c(" SE", se.cap) ),
+    "  ",
+	format( c(" Survival var", names(sur.coef))), 
+	format( c(" Est", sur.coef) ), 
+	format( c(" SE", se.sur) ),
+	"\n", sep="  "))
 
 cat(paste("\nMessage =", x$message ))
 cat(paste("\nModel df = ", x$df))
@@ -37,7 +38,8 @@ cat(paste("\nAIC = ", x$aic))
 cat(paste("\nAICc = ", x$aicc))
 cat(paste("\nQAIC = ", x$qaic))
 cat(paste("\nQAICc = ", x$qaicc))
-cat(paste("\nEBC = ", x$ebc, "\n"))
+#cat(paste("\nEBC = ", x$ebc, "\n"))
+cat("\n")
 
 
 if( inherits(x,"cjsgof") ){

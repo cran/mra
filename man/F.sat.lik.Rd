@@ -46,10 +46,10 @@ covariates only fit to histories in \code{cjs.hists}, compute deviance as
 
 
 \note{ 
-CAUTION: This routine only works for time varying models only. If 
+CAUTION: This routine works for time varying models only. If 
 individual-varying or individual-and-time-varying covariates are fitted 
 in the model, 
-the routine does not know this and will run but yield an incorrect answer. 
+the routine cannot sense it and will run but yield an incorrect answer. 
 Use relative deviance reported by \code{F.cjs.estim} in this case.
 
 Also, this routine will not run if animals have been removed (censored). I.e., the 
@@ -65,10 +65,12 @@ by \code{F.cjs.estim} when animals have been removed.
 
 \seealso{ \code{\link{F.cjs.estim}} }
 \examples{ 
+\donttest{
 data(dipper.histories)
 xy <- F.cjs.covars( nrow(dipper.histories), ncol(dipper.histories) )
 for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } 
 dipper.cjs <- F.cjs.estim( ~x2+x3+x4+x5+x6, ~x1+x2+x3+x4+x5, dipper.histories )
 deviance <- -F.sat.lik( dipper.histories ) - 2*dipper.cjs$loglik
+}
  }
 \keyword{ models }

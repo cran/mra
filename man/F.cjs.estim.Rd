@@ -10,7 +10,7 @@
 \title{ F.cjs.estim - Cormack-Jolly-Seber estimation }
 \description{
    Estimates Cormack-Jolly-Seber (CJS) capture-recapture models with individual, time, and
-	individual-time varying covariates using the "regression" parameterization of 
+	individual-time varying covariates using the "regression" parametrization of 
 	Amstrup et al (2006, Ch 9). For live recaptures only. Losses on capture allowed.
 	Uses a logistic link function to relate probability of capture and survival 
 	to external covariates.  
@@ -18,32 +18,33 @@
 \usage{
 F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,  
 	algorithm = 1, cov.meth = 1, nhat.v.meth = 1, c.hat = -1, df = NA,
-	intervals=rep(1,ncol(histories)-1))
+	intervals=rep(1,ncol(histories)-1), conf=0.95)
 }
 
 %- maybe also 'usage' for other objects documented here.
 
 \arguments{
   \item{capture}{ Formula specifying the capture probability model.  Must be a formula object with 
-	no response, then ~, followed by the names of 2-D arrays of covariates to fit in the capture model. 
+	no response. I.e.,  "~" followed by the names of 2-D arrays of covariates to fit in the capture model. 
 	For example: 'capture = ~ age + sex', where age and sex are matrices of size NAN X NS 
 	containing the age and sex covariate values.  NAN = number of animals = number of rows in 
 	\code{histories} matrix (see below).  NS = number of samples = number of columns in histories
-	matrix (see below). Number of matrices specified in the capture model is assumed to be NX. Specify 
-	intercept only model as 'capture = ~ 1'.  Specify model without an intercept using 'capture = ~ -1 + x'.  }
+	matrix (see below). Number of matrices specified in the capture model is assumed to be NX. Time 
+    varying and individual varying vectors are fitted using \code{ivar()} and \code{tvar()} (see Details).
+    Factors are allowed within \code{ivar()} and \code{tvar()}. }  
   \item{survival}{ Formula specifying the survival probability model.  Must be a formula object with 
-	no response, then ~, followed by the names of 2-D arrays of covariates to fit in the survival model. 
-	For example: survival = ~ year + ageclass where year and ageclass are matrices of size NAN X NS 
-	containing year and ageclass covariate values.  NAN = number of animals = number of rows in 
-	\code{histories} matrix (see below).  NS = number of samples = number of columns in histories
-	matrix (see below). Number of matrices specified in the survival model is assumed to be NY. Specify 
-	intercept only model as 'survival = ~ 1'.  Specify model without an intercept using 'survival = -1 + y'.}
+	no response. I.e., "~" followed by the names of 2-D arrays of covariates to fit in the survival model. 
+	For example: 'survival = ~ year + ageclass' where year and ageclass are matrices of size NAN X NS 
+	containing year and ageclass covariate values.  Number of matrices specified in the survival 
+    model is assumed to be NY. 
+    Time varying and individual varying vectors are fitted using \code{ivar()} and \code{tvar()} 
+    (see Details). Factors are allowed within \code{ivar()} and \code{tvar()}.  }
   \item{histories}{ A NAN X NS = (number of animals) X (number of capture occasions) matrix 
 	containing capture histories.  Capture histories are comprised of 0's, 1',s and 2's. 
 	0 in cell (i,j) means animal i was not captured on occasion j, 1 in cell (i,j) means animal 
 	i was captured on occasion j and released live back into the population, 2 in cell (i,j) means 
 	animal i was captured on occasion j and was not released back into the population (e.g., it died).
-	Animals with '2' as the last non-zero in thier histories are 'censored'. I.e., Animals with 
+	Animals with '2' as the last non-zero in their histories are 'censored'. I.e., Animals with 
 	2's are 'removed' from the likelihood after the occasion with the 2. }
   \item{cap.init}{ (optional) Vector of initial values for coefficients in the capture model.  One element 
 	per covariate in \code{capture}. The default value usually works. }
@@ -78,7 +79,7 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	than method 1, especially if the coefficient of variation of capture probabilities 
 	are >1.0, but method 2 has not been studied as much as method 1. 
 	\code{nhat.v.meth} = 3 uses the variance estimator of McDonald and Amstrup, 1999, JABES, which is a 1st order approximation
-	that does not incorporate covarainces. Method 3 is much faster than methods 1 and 2 
+	that does not incorporate covariances. Method 3 is much faster than methods 1 and 2 
 	and could be easily calculated by hand, but 
 	should only be used when there is little capture heterogeneity. }
   \item{c.hat}{ External (override) estimate of variance inflation factor (\code{c.hat}) to use
@@ -108,8 +109,10 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	other words, all survival estimates are for an interval of length 1.  If an interval 
 	of 1 is one year, then all survival estimates will be annual survival, with probability 
 	of surviving 2 years equal to annual survival squared, probability of surviving 3 years 
-	equal to annual survival cubed, etc.    
-	 }.
+	equal to annual survival cubed, etc.}    
+  \item{conf}{Confidence level for the confidence intervals placed around estimates 
+    of population size. Default 95\% confidence.}
+	 
 }
 
 \details{
@@ -121,6 +124,70 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	A log file, named \code{mra.log}, is written to the current directory.  This file contains
      	additional details, such as individual Test 2 and Test 3 components, in a semi-friendly 
      	format.  This file is overwritten each run. 
+
+    \bold{Model Specification:} Both the \code{capture} and \code{survival} model can be 
+    specified as any combination of 2-d matrices (time and individual varying covariates), 
+    1-d time varying vectors, 1-d individual 
+    varying vectors, 1-d time varying factors, and 1-d individual varying factors. 
+
+    Specification of time or individual varying effects uses the 
+    \code{tvar} (for 'time varying') and \code{ivar} (for 'individual varying') functions. 
+    These functions expand covariate vectors along the appropriate dimension to 
+    be 2-d matrices suitable for fitting in the model.  \code{ivar} expands 
+    an individual varying vector to all occasions.  \code{tvar} expands a time 
+    varying covariate to all individuals.  To do the expansion, both \code{tvar} 
+    and \code{ivar} need to know the size of the 'other' dimension. Thus, \code{tvar(x,100)}
+    specifies a 2-d matrix with size \code{100} by \code{length(x)}. 
+    \code{ivar(x,100)}
+    specifies a 2-d matrix with size \code{length(x)} by \code{100}. 
+
+    For convenience, the 'other' dimension of time or individual varying covariates 
+    can be specified as an attribute of the vector.  Assuming \code{x} 
+    is a NS vector and the 'nan' attribute of \code{x} has been set as
+    \code{attr(x,"nan") <- NAN}, \code{tvar(x,NAN)} and 
+    \code{ tvar(x) } are equivalent. Same, but vise-versa, for individual varying 
+    covariates (i.e., 
+    assign the number of occasions using \code{attr(x,"ns")<-NS}).  This saves 
+    some typing in model specification.
+
+    Factors are allowed in \code{ivar} and \code{tvar}.  When a factor is specified, 
+    the \code{contr.treatment} coding is used.  By default, an intercept 
+    is assumed and the first level of all 
+    factors are dropped from the model (i.e., first levels are the reference levels, 
+    the default R action).  However, there are applications where more than one level 
+    will need to be dropped, and the user has control over this via the \code{drop.levels}
+    argument to \code{ivar} and \code{tvar}.  For example, 
+    \code{tvar(x,drop.levels=c(1,2))} drops the first 2 levels of factor x.  
+    \code{tvar(x,drop.levels=length(levels(x)))} does the SAS thing and drops 
+    the last level of factor \code{x}.  If \code{drop.levels} is outside the range 
+    [1,\code{length(levels(x))}] (e.g., negative or 0), no levels of the factor 
+    are dropped.  If no intercept is fitted in the model, this results in the 
+    so-called cell means coding for factors. 
+
+    
+    Example model specifications:  Assume 'age' is a NAN x NS 2-d matrix of ages, 
+    'effort' is a size NS 1-d vector of efforts, and 'sex' is a size NAN 1-d factor 
+    of sex designations ('M' and 'F'). 
+    \enumerate{
+        \item capture= ~ 1 : constant effect over all individuals and time (intercept only model)
+        \item capture= ~ age  : Intercept plus age 
+        \item capture= ~ age + tvar(effort,NAN) : Intercept plus age plus effort
+        \item capture= ~ age + tvar(effort,NAN) + ivar(sex,NS) : Intercept plus age plus effort plus sex. 
+            Females (1st level) are the reference.
+        \item capture= ~ -1 + ivar(sex,NS,0) : sex as a factor, cell means coding
+        \item capture= ~ tvar(as.factor(1:ncol(histories)),nrow(histories),c(1,2)) : time varying effects
+    }
+
+   
+    \bold{Values in 2-d Matrix Covariates:} Even though covariate matrices are required to 
+    be NAN x NS (same size as capture histories), there are not that many parameters.
+    The first capture probability cannot be estimated in CJS models, and the NS-th survival 
+    parameter does not exist.  When a covariate matrix appears in the \emph{capture} model,
+    only values in columns 2:ncol(histories) are used.  When a covariate matrix appears in 
+    the \emph{survival} model, only values in columns 1:(ncol(histories)-1) are used. 
+    See examples for demonstration.
+    
+
 }
 
 \value{An object (list) of class c("cjs","cr") with many components.  Use \code{print.cr} to print 
@@ -132,19 +199,17 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{aux}{Auxiliary information, mostly stored input values. This is a list containing:
 	\$call, \$nan=number of animals, \$ns=number of samples, \$nx=number of coefficients 
 	in capture model, \$ny=number of coefficients in survival model, \$cov.name=names 
-	of coefficients, \$ic.name=name of capture history matrix, \$mrawin.version=
-	version number for this package, \$package=software (S-Plus or R) used to 
-	estimate the model, \$package.version=S-Plus or R version used for estimation,
+	of coefficients, \$ic.name=name of capture history matrix, \$mra.version=
+	version number of this package, \$R.version=R version used for estimation,
 	\$run.date=date the model was estimated.}
   \item{loglik}{Maximized CJS likelihood value for the model}
   \item{deviance}{Model deviance = -2*\code{loglik}.  This is relative deviance, see help for 
 	\code{F.sat.lik}.}
   \item{aic}{AIC for the model = \code{deviance} + 2*(df).  df is either the estimated number of independent 
 	parameters (by default), or NX+NY, or a specified value, depending on the input value of DF parameter.}
-  \item{qaid}{QAIC (quasi-AIC) = (\code{deviance} / \code{vif}) + 2(df)}
+  \item{qaic}{QAIC (quasi-AIC) = (\code{deviance} / \code{vif}) + 2(df)}
   \item{aicc}{AIC with small sample correction = AIC + (2*\code{df}*(\code{df}+1)) / (\code{nan} - \code{df} - 1)}
   \item{qaicc}{QAIC with small sample correction = QAIC + (2*\code{df}*(\code{df}+1))/(\code{nan} - \code{df} - 1)}
-  \item{ebc}{Empirical Bayes Criterion of Peterson (1986), Stat and Prob letters, p227.}
   \item{vif}{Variance inflation factor used = estimate of c.hat = \code{chisq.vif} / \code{chisq.df} }
   \item{chisq.vif}{Composite Chi-square statistic from Test 2 and Test 3 used to compute \code{vif}, based 
 	on pooling rules.}
@@ -179,7 +244,10 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{exit.code}{Exit code from the maximization routine.  Interpretation for \code{exit.code} is in \code{message}.}
   \item{cov.code}{A code indicating the method used to compute the covariance matrix.}
   \item{cov.meth}{String indicating method used to compute covariance matrix.  Interprets \code{cov.code}.}
-  \item{n.hat}{Vector of Horvitz-Thompson estimates of population size.  Length NS.  No estimate for 
+  \item{n.hat}{Vector of Horvitz-Thompson estimates of population size.  The Horvitz-Thompson 
+    estimator of size is, 
+    \deqn{\hat{N}_{ij} = \sum_{i=1}^{NAN} \frac{h_{ij}}{\hat{p}_{ij}}}{N(ij) = sum( h(ij) / p(ij))}
+    Length of \code{n.hat} = NS.  No estimate for 
 	first occasion.}
   \item{se.n.hat}{Estimated standard errors for \code{n.hat} estimates.  Computed using method 
 	specified in \code{nhat.v.meth}.}
@@ -191,10 +259,12 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{fitted}{Matrix of fitted values for the capture histories.  Size NAN X NS.  
     Cell (i,j)
 	is expected value of capture indicator in cell (i,j) of \code{histories} matrix.}
-  \item{residuals}{Matrix of Pearson residuals = \eqn{(h(ij) - Psi(ij))^2 / Psi(ij)}, where 
-	Psi(ij) is the expected (or fitted) value for cell (i,j) and h(ij) is the capture indicator for 
+  \item{residuals}{Matrix of Pearson residuals defined as, 
+    \deqn{r_{ij} = \frac{(h_{ij} - \Psi_{ij})^2}{\Psi_{ij}}}{(h(ij) - Psi(ij))^2 / Psi(ij)}, 
+    where \eqn{\Psi_{ij}}{Psi(ij)} is the expected (or fitted) value for cell 
+    (i,j) and \eqn{h_{ij}}{h(ij)} is the capture indicator for 
 	animal i at occasion j.  This matrix has size NAN X NS. See parts pertaining to the "overall test" in 
-	documentation for \code{F.cjs.gof} for a description of Psi(ij). }
+	documentation for \code{F.cjs.gof} for a description of \eqn{\Psi_{ij}}{Psi(ij)}. }
   \item{resid.type}{String describing the type of residuals computed.  Currently, only Pearson
 	residuals are returned.}
 }
@@ -227,13 +297,33 @@ McDonald, T. L., and S. C. Amstrup. 2001. Estimation of population size using
 
 \examples{
 
-## not run, but this works
+\donttest{
 ## Fit CJS model to dipper data, time-varying capture and survivals.
-##data(dipper.histories)
-##xy <- F.cjs.covars( nrow(dipper.histories), ncol(dipper.histories) )
-##for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } # Extract 2-D matricies of 0s and 1s
-##dipper.cjs <- F.cjs.estim( ~x2+x3+x4+x5+x6, ~x1+x2+x3+x4+x5, dipper.histories )
-##print(dipper.cjs)
+## Method 1 : using factors
+data(dipper.histories)
+ct <- as.factor( paste("T",1:ncol(dipper.histories), sep=""))
+attr(ct,"nan")<-nrow(dipper.histories)
+dipper.cjs <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(ct,drop=c(1,6,7)), dipper.histories )
+
+## Method 2 : same thing using 2-d matrices
+xy <- F.cjs.covars( nrow(dipper.histories), ncol(dipper.histories) )
+for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } # Extract 2-D matrices of 0s and 1s
+dipper.cjs <- F.cjs.estim( ~x3+x4+x5+x6+x7, ~x2+x3+x4+x5, dipper.histories )
+
+## Values in the 1st column of capture covariates do not matter
+x3.a <- x3
+x3.a[,1] <- 999
+dipper.cjs2 <- F.cjs.estim( ~x3.a+x4+x5+x6+x7, ~x2+x3+x4+x5, dipper.histories )
+# compare dipper.cjs2 to dipper.cjs
+
+## Values in the last column of survival covariates do not matter
+x3.a <- x3
+x3.a[,ncol(dipper.histories)] <- 999
+dipper.cjs2 <- F.cjs.estim( ~x3+x4+x5+x6+x7, ~x2+x3.a+x4+x5, dipper.histories )
+# compare dipper.cjs2 to dipper.cjs
+
+}
+
 }
 
 \keyword{ survival }% at least one, from doc/KEYWORDS

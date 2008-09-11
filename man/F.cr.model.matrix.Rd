@@ -3,11 +3,12 @@
 
 \title{ Capture-Recapture model matrix }
 \description{ 
-  	Returns the model matrix for a capture-recapture model in the form 
-	of a (giant) 2D matrix. 
+  	Returns two model matrices for capture-recapture modeling. Both are 
+    in the form 
+	of (giant) 2D matrices. 
 }
 \usage{ 
-F.cr.model.matrix(capture, survival)
+F.cr.model.matrix(capture, survival, nan, ns)
 }
 \arguments{
   \item{capture}{ Formula for the capture model.  Must be a formula object with 
@@ -18,6 +19,11 @@ F.cr.model.matrix(capture, survival)
 	no response, then ~, followed by the names of 2-D arrays of covariates to fit in 
 	the survival model. 
 	For example: capture = ~ age + sex, where age and sex are matrices.  }
+  \item{nan}{ Number of individuals in the model. This is necessary for the 
+    \code{ivar} and \code{tvar} functions to work.  Normally, \code{nan} = 
+    number of rows in capture history matrix.  No default value. }
+  \item{ns}{ Number of sampling occasions.  Normally, \code{ns} = number of 
+    columns in the capture history matrix. }
 }
 \details{
   This routine is intended to be called internally by model fitting routines 
@@ -27,6 +33,10 @@ F.cr.model.matrix(capture, survival)
   R internal \code{model.matrix} to 
   resolve the matrices in the formula. All matrices specified in the models 
   should be in the current scope and accessible to both \code{eval} and \code{model.matrix}.  
+  
+  This routine calls \code{F.3d.model.matrix} twice.  \code{F.3d.model.matrix} 
+  does all the work. 
+  
 }
 \value{
   A list containing the following components:
@@ -60,12 +70,14 @@ F.cr.model.matrix(capture, survival)
 \seealso{ \code{\link{F.cjs.estim}}, \code{\link{model.matrix}}, \code{\link{eval}} }
 \examples{ 
 
+
 # Synthetic example with 10 animals and 5 occasions
 nan <- 10
 ns <- 5
 sex <- matrix( as.numeric(runif( nan ) > 0.5), nrow=nan, ncol=ns )
 x <- matrix( runif( nan*ns ) , nrow=nan, ncol=ns )
-F.cr.model.matrix( capture= ~ sex + x, survival= ~ -1 + x )
+F.cr.model.matrix( capture= ~ sex + x, survival= ~ -1 + x, nan, ns )
+
 
 }
 
