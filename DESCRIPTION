@@ -1,10 +1,10 @@
 Package: mra
 Type: Package
 Title: Analysis of Mark-Recapture data
-Version: 2.1
-Date: 2008-09-11
+Version: 2.2
+Date: 2008-10-03
 Author: Trent McDonald
 Maintainer: Trent McDonald <tmcdonald@west-inc.com>
-Description: Analysis of mark-recapture (capture-recapture) data using individual, time, and individual-time varying covariates. Version 1.X contains functions to estimate live-capture Cormack-Jolly-Seber open population models.
+Description: Analysis of mark-recapture data using covariates. Models implemented: CJS open population; Huggin's closed population.
 License: GNU General Public License
-Packaged: Thu Sep 18 14:06:36 2008; tmcdonald
+Packaged: Wed Oct  8 11:38:53 2008; tmcdonald

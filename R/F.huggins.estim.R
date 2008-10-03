@@ -1,4 +1,4 @@
-F.huggins.estim <- function(capture, recapture, histories, cap.init, recap.init,
+F.huggins.estim <- function(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
     algorithm=1, cov.meth=1, nhat.v.meth=1, df=NA){
 
 start.sec <- proc.time()[3]
@@ -30,15 +30,34 @@ cr.call <- match.call()
 nan <- nrow( histories )
 ns <- ncol( histories )
 
-
 # return the X and Y matrix.  Model for initial captures is in 'capture'. 
 # Model for recaptures is in 'recapture'. 
-# After this, both matrices are huge NAN by (ns*nx) matrix.
-covars <- F.cr.model.matrix( capture, recapture, nan, ns )  
+# After this, both matrices are huge NAN by (ns*nx) matrices.
 
-nx <- covars$n.cap.covars
-ny <- covars$n.sur.covars  # Number of covars in recapture model
+capX <- F.3d.model.matrix( as.formula(capture), nan, ns )
+cap.intercept <- attr(capX, "intercept") == 1
+cap.names <- attr(capX, "variables")
+nx <- length(cap.names)
 
+if( !is.null(recapture) ){
+    recapX <- F.3d.model.matrix( as.formula(recapture), nan, ns )
+    recap.intercept <- attr(recapX, "intercept") == 1
+    recap.names <- attr(recapX, "variables")
+    ny <- length(recap.names)
+} else {
+    recapX <- rep(1,nan)
+    recap.intercept <- FALSE
+    recap.names <- "NULL"
+    ny <- 0
+}
+
+# Rep out the remove vector, and convert to integer
+if(length(remove) < nx){
+    remove <- rep(remove, nx)
+} else if (length(remove) > nx ){
+    remove <- remove[1:nx]
+}
+remove.vec <- as.numeric( remove )
 
 #   Set initial values if missing or short
 if( missing(cap.init) ){
@@ -83,11 +102,12 @@ ans <- .Fortran( "hugginsmodel",
         as.integer(nx), 
         as.integer(ny),
         as.integer(histories),  
+        as.integer(remove.vec),
         as.integer(algorithm), 
         as.integer(cov.meth), 
         as.integer(nhat.v.meth), 
-        as.double(covars$capX),
-        as.double(covars$survX), 
+        as.double(capX),
+        as.double(recapX), 
         as.double(cap.init),
         as.double(recap.init), 
         as.double(loglik), 
@@ -111,23 +131,27 @@ ans <- .Fortran( "hugginsmodel",
 
 cat(paste("Returned from MRA. Details in MRA.LOG.\n", sep=""))
 
-loglik     <- ans[[13]]
-deviance   <- ans[[14]] 
-aic        <- ans[[15]] 
-parameters <- ans[[16]]
-se.param   <- ans[[17]] 
-covariance <- ans[[18]] 
-p.hat      <- ans[[19]] 
-se.p.hat   <- ans[[20]] 
-c.hat      <- ans[[21]]
-se.c.hat   <- ans[[22]] 
-n.hat      <- ans[[23]]
-se.n.hat   <- ans[[24]]
-lower.ci   <- ans[[25]]
-upper.ci   <- ans[[26]]
-exit.code  <- ans[[27]]
-cov.code   <- ans[[28]]
-df.estimated <- ans[[29]]
+#   Set to place in ans of first output.  This makes it easier to add or subtract 
+#   parameters to .Fortran call.  All outputs come after this.
+out.ind <- 14
+
+loglik     <- ans[[out.ind + 0]]
+deviance   <- ans[[out.ind + 1]] 
+aic        <- ans[[out.ind + 2]] 
+parameters <- ans[[out.ind + 3]]
+se.param   <- ans[[out.ind + 4]] 
+covariance <- ans[[out.ind + 5]] 
+p.hat      <- ans[[out.ind + 6]] 
+se.p.hat   <- ans[[out.ind + 7]] 
+c.hat      <- ans[[out.ind + 8]]
+se.c.hat   <- ans[[out.ind + 9]] 
+n.hat      <- ans[[out.ind + 10]]
+se.n.hat   <- ans[[out.ind + 11]]
+lower.ci   <- ans[[out.ind + 12]]
+upper.ci   <- ans[[out.ind + 13]]
+exit.code  <- ans[[out.ind + 14]]
+cov.code   <- ans[[out.ind + 15]]
+df.estimated <- ans[[out.ind + 16]]
 
 # ----- Fortran sets missing standard errors < 0. Reset missing standard errors to NA.
 se.param[ se.param < 0 ] <- NA
@@ -190,15 +214,21 @@ se.c.hat[,1] <- NA
 # ----- Transfer over coefficients
 capcoef <- parameters[1:nx]
 se.capcoef <- se.param[1:nx]
-recapcoef <- parameters[(nx+1):(nx+ny)]
-se.recapcoef <- se.param[(nx+1):(nx+ny)]
+names(capcoef) <- cap.names
+names(se.capcoef) <- cap.names
+nms <- paste("cap.",names( capcoef ),sep="")
 
-names(capcoef) <- covars$cap.vars
-names(se.capcoef) <- covars$cap.vars
-names(recapcoef) <- covars$sur.vars
-names(se.recapcoef) <- covars$sur.vars
+if( ny >= 1 ){
+    recapcoef <- parameters[(nx+1):(nx+ny)]
+    se.recapcoef <- se.param[(nx+1):(nx+ny)]
+    names(recapcoef) <- recap.names
+    names(se.recapcoef) <- recap.names
+    nms <- c( nms, paste("recap.",names( recapcoef ), sep="") )
+} else {
+    recapcoef <- NULL
+    se.recapcoef <- NULL
+}    
 
-nms <- c( paste("cap.",names( capcoef ),sep=""), paste("recap.",names( recapcoef ), sep=""))
 dimnames(covariance) <- list( nms, nms )
 
 # ----- Fix up number of parameters.
@@ -224,12 +254,7 @@ aux <- list( call=cr.call, nan=nan, ns=ns, nx=length(capcoef), ny=length(recapco
         run.date=run.date )
 
 
-# ----- Fix up the estimates of N.
-#   If using log-based CI in Fortran, no need to fix up CI
-#lower.ci <- n.hat - 1.96 * se.n.hat   
-#lower.ci <- ifelse(lower.ci < nan, nan, lower.ci)
-#upper.ci <- n.hat + 1.96 * se.n.hat
-
+# ----- Estimates of N are computed in Fortran.  No need to modify.
 
 # ----- Done. Put into a 'hug' object.
 ans <- list( histories=histories, 
@@ -242,6 +267,7 @@ ans <- list( histories=histories,
     se.capcoef=se.capcoef, 
     recapcoef=recapcoef, 
     se.recapcoef=se.recapcoef,
+    remove=remove,
     covariance=covariance,
     p.hat=p.hat, 
     se.p.hat=se.p.hat, 

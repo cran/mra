@@ -16,7 +16,7 @@
 }
 
 \usage{
-F.huggins.estim(capture, recapture, histories, cap.init, recap.init,
+F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
     algorithm=1, cov.meth=1, nhat.v.meth=1, df=NA)
 }
 
@@ -34,11 +34,14 @@ F.huggins.estim(capture, recapture, histories, cap.init, recap.init,
     intercept only model as 'capture = ~ 1'.  Specify model without an intercept 
     using 'capture = ~ -1 + x'.  }
   \item{recapture}{ Formula specifying covariates to included in the 
-    recapture probability model.  Should be specified the same way as the 
+    recapture probability model, or NULL.  Should be specified the same way as the 
     \code{capture} model.  
     For example: 'recapture = ~ behave + sex'. The number of covariates specified in
-    the recapture model is NY.  Thus, total number of parameters this routine 
-    attempts to estimate is NX+NY. See \code{df} argument. }
+    the recapture model is NY.  Total number of parameters this routine 
+    attempts to estimate is NX+NY. See \code{df} argument. If \code{recapture=NULL}, 
+    no recapture model (or the empty model) is estimated.  In this case, 
+    recapture probabilities equal initial capture probabilties and both depend on the 
+    model in \code{capture}. Note that NULL models are specified without the ~.}
   \item{histories}{ A NAN X NS = (number of individuals) X (number of capture occasions) matrix 
     containing capture histories.  Capture histories are comprised of 0's and 1's only. 
     0 in cell (i,j) of this matrix means individual i was not captured on occasion j, 
@@ -49,6 +52,15 @@ F.huggins.estim(capture, recapture, histories, cap.init, recap.init,
     If deaths on capture occured and an estimate of N at the beginning of the 
     study is sought, remove the entire history, estimate N using this routine from
     the remaining histories, and add back the number of deleted histories.}
+  \item{remove}{A logical scalar, or vector of logical values, specifying which 
+    \code{capture} covariates to remove from the \code{recapture} model. By default
+    (\code{remove=FALSE}), no capture covariates are removed, meaning all terms
+    in the model for initial capture also appear in the model for recaptures 
+    \emph{with the same coefficient values}.  See Details section.  If \code{remove}
+    is a vector, each entry specifies whether the corresponding effect in \code{capture} 
+    should be removed from the \code{recapture} model.  
+    If \code{remove} is shorter than NX (the number of matricies in 
+    \code{capture}), it is replicated to have length NX.}
   \item{cap.init}{ (optional) Vector of initial values for coefficients in the initial 
     capture model.  One element 
     per covariate in \code{capture}. This parameter does not usually need to be specified. }
@@ -90,6 +102,64 @@ F.huggins.estim(capture, recapture, histories, cap.init, recap.init,
     that utilize mixture distributions for probability of capture cannot be
     fitted via this routine.  
   
+    If \code{remove=FALSE} (default) the models for initial capture and 
+    subsequent recapture are,
+    \deqn{p_{ij} = \beta_0 + \beta_1 x_{ij1} + \ldots + \beta_a x_{ija}}{%
+         p[i,j] = B0 + B1*x1[i,j] + ... + Ba*xa[i,j]}
+    and     
+    \deqn{c_{ij} = \beta_0 + \beta_1 x_{ij1} + \ldots + \beta_a x_{ija} + 
+        \gamma_0 + \gamma_1 z_{ij1} + \ldots + \gamma_b z_{ijb}}{%
+         c[i,j] = B0 + B1*x1[i,j] + ... + Ba*xa[i,j] + 
+         G0 + G1*z1[i,j] + ... + Gb*zb[i,j]}
+    where the x's and z's are covariate values specified in \code{capture} 
+    and \code{recapture}, respectively, and the \eqn{\beta}{B}'s and 
+    \eqn{\gamma}{G}'s are estimated coefficients. (For breavity, 
+    '\emph{a}' has been substitutied for NX, '\emph{b}' for NY.) In other words, by default 
+    all effects in the capture model also appear in the recapture model 
+    \emph{with the same estimated coefficients}.  This is done so that 
+    capture and recapture probabilities can be constrained to equal one another. 
+    If \code{capture=~1} and \code{recapture=NULL}, capture and recapture 
+    probabilities are constant and equal to one another. 
+    If \code{capture=~x1} and \code{recapture=NULL}, capture and recapture 
+    probabilities are equal, and both are the exact same function of 
+    covariate \code{x1}. A simple additive 
+    behavioral (trap happy or trap shy) effect is fitted by specifying an 
+    intercept-only model for recaptures, i.e.,
+    \code{capture=~x1+x2+...+xp} and \code{recapture=~1}.  
+    
+    When a Huggin's model object is printed using the default 
+    print method (\code{print.hug}), a "C" (for "capture") appears next to coefficients
+    in the recapture model that are also in the initial capture model.  These 
+    coefficients are fixed in the recapture model.  A "B" (for "behavioral")
+    appears next to free coefficients in the recapture model that \emph{do not}
+    appear in the initial capture model.  
+    
+    If \code{remove} is something other than FALSE, it is extended to have length
+    NX, and if element \emph{i} equals TRUE, the \emph{i}-th 
+    effect in the capture model is removed from the recapture model.  If 
+    \code{remove=c(FALSE, TRUE, FALSE)}, \code{capture=~x1+x2}, and 
+    \code{recapture=~x1+x3}, the models for initial capture and subsequent 
+    recapture are, 
+    \deqn{p_{ij} = \beta_0 + \beta_1 x_{ij1} + \beta_2 x_{ij2}}{%
+         p[i,j] = B0 + B1*x1[i,j] + B2*x2[i,j]}
+    and     
+    \deqn{c_{ij} = \beta_0 + \beta_2 x_{ij2} + \gamma_0 + \gamma_1 x_{ij1} + \gamma_2 x_{ij3}.}{%
+         c[i,j] = B0 + B2*x2[i,j] +  
+         G0 + G1*x1[i,j] + G2*x3[i,j].}
+    Note that \code{x1} appears in the recapture equation, but with a 
+    different estimated coefficient. If \code{remove=TRUE}, all capture effects
+    are removed from the recapture model and the models are completely separate.
+    
+    The ability to remove terms from the recapture model adds modeling flexibility. 
+    For example, if initial captures were hypothesized to depend on the variable 
+    \code{sex}, but recaptures were hypothesized to be constant (no \code{sex} effect), 
+    the arguments to fit this model would be \code{capture=~sex}, \code{recapture=~1}, 
+    and \code{remove=TRUE}.  A pure time-varying model with different time 
+    effects in the initial and subsequent capture models can be fitted using 
+    \code{capture=~tvar(1:ns,nan)}, \code{recapture=~tvar(1:ns,nan)}, 
+    and \code{remove=TRUE}.  In this case, the same model, but parameterized differently, 
+    can be fitted with \code{remove=FALSE}.  
+    
     See Details of \code{help(F.cjs.estim)} for ways that 2-d matrices, 1-d 
     vectors, and 1-d factors can be specified in the capture and recapture
     models.  
@@ -97,6 +167,13 @@ F.huggins.estim(capture, recapture, histories, cap.init, recap.init,
     A log file, named \code{mra.log}, is written to the current directory.  
     This file contains additional details in a semi-friendly 
     format.  CAREFUL: This file is overwritten each run. 
+    
+    Values in 2-d Matrix Covariates: Even though covariate 
+    matrices are required to be NAN x NS (same size as capture histories), 
+    there are not that many recapture parameters. 
+    Recapture parameters for the first occasion are not defined. 
+    For all covariates in the recapture model, only values in 
+    columns 2:ncol(histories) are used.  See examples for demonstration. 
 }
 
 
@@ -201,15 +278,50 @@ Amstrup, S. C., T. L. McDonald, and B. F. J. Manly (editors). 2005. Handbook of
 \examples{
 
 \donttest{
-# Fit time-constant model (i.e., model M(0)).
+# Fake the data for these examples
 ch.mat <- matrix( round(runif(30*5)), nrow=30, ncol=5)
 ch.mat <- ch.mat[ apply(ch.mat,1,sum) > 0, ]  # no zero rows allowed
-hug.m0 <- F.huggins.estim( ~1, ~1, ch.mat )
-
-# Fit time varying model (i.e., model M(t))
 ct <- as.factor(1:ncol(ch.mat))
-attr(ct,"nan") <- nrow(ch.mat)
-hug.mt <- F.huggins.estim( ~tvar(ct), ~tvar(ct), ch.mat)
+attr(ct,"nan") <- nrow(ch.mat)   # used to fit time varying factor
+sex <- round(runif(nrow(ch.mat)))   # fake sex 
+attr(sex,"ns") <- ncol(ch.mat)
+
+# Models parallel to the 8 Otis et al. models.
+# see Amstrup et al. (2005, p. 77)
+
+# Constant model (model M(0)).
+hug.0 <- F.huggins.estim( ~1, NULL, ch.mat )
+
+# Time varying model (model M(t))
+hug.t <- F.huggins.estim( ~tvar(ct), NULL, ch.mat)
+
+# Additive Behavioral model (model M(b))
+hug.b <- F.huggins.estim( ~1, ~1, ch.mat )
+
+# Time and Behavioral model (model M(tb))
+hug.tb <- F.huggins.estim( ~tvar(ct), ~1, ch.mat )
+
+# Individual effects (model M(h))
+hug.h <- F.huggins.estim( ~ivar(sex), NULL, ch.mat )
+
+# Individual and Behavioral effects (model M(bh))
+hug.bh <- F.huggins.estim( ~ivar(sex), ~1, ch.mat )
+
+# Individual and time effects (model M(th))
+hug.th <- F.huggins.estim( ~ivar(sex)+tvar(ct), NULL, ch.mat )
+
+# Individual, time, and behavoral effects (model M(tbh))
+hug.tbh <- F.huggins.estim( ~ivar(sex)+tvar(ct), ~1, ch.mat )
+
+# Time varying initial captures, but recaptures only depend on sex.
+hug.custom <- F.huggins.estim( ~tvar(ct), ~ivar(sex), ch.mat, remove=TRUE )
+
+# Values in first column of recapture covariates do not matter. 
+# Below, mod.1 and mod.2 are identical.
+mod.1 <- F.huggins.estim( ~tvar(ct), ~tvar( c( 0,1,2,3,4), nrow(ch.mat)), ch.mat, remove=TRUE)
+mod.2 <- F.huggins.estim( ~tvar(ct), ~tvar( c(-9,1,2,3,4), nrow(ch.mat)), ch.mat, remove=TRUE)
+
+
 
 }
 

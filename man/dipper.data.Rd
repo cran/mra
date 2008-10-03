@@ -33,7 +33,12 @@ Example capture-recapture data from a study of European dippers.
   \code{dipper.males} is a vector indicating male birds.  I.e., \code{dipper.males <- dipper.data\$males}
 
   \code{dipper.histories} is a matrix of just the capture history columns \code{h1 - h7}, extracted 
-	from \code{dipper.data} and made into a matrix. This matrix is fed directly into \code{F.cr.estim}.
+	from \code{dipper.data} and made into a matrix. This matrix can be fed directly into 
+    one of the estimation routines, such as \code{F.cjs.estim}.
+    
+  \bold{To access}: After loading the MRA library (with \code{library(mra)}) you must
+  execute \code{data(dipper.data)}, \code{data(dipper.data)}, or \code{data(dipper.males)}   
+  to get access to these data frames.  They are not attached when the library is loaded. 
  
 }
 \source{

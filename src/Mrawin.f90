@@ -299,7 +299,7 @@ module globevars
     real(kind=dbl), dimension(:,:,:), pointer :: ptr_survX ! Survival covariates for CJS
     real(kind=dbl), dimension(:,:,:), pointer :: ptr_capY ! RE-capture covariates for Huggins
     integer, dimension(:,:), pointer :: ptr_hist, ptr_dead
-    integer, dimension(:), pointer :: ptr_first, ptr_last
+    integer, dimension(:), pointer :: ptr_first, ptr_last, ptr_remove
     real(kind=dbl), dimension(:), pointer :: ptr_intervals
 
 end module
@@ -533,7 +533,6 @@ subroutine cjsmod( nan, &
         parameters(i+nx) = sur_init(i)
     end do
 
-    write(6,*) "df = ", df
     ! output is parameters, loglik, and covariance and codes. previous values are destroyed
     call CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
         pos_def_code, df)
@@ -632,6 +631,7 @@ subroutine hugginsmodel( &
         nx, &
         ny, &
         hist, &
+        remove, &
         algorithm, &
         cov_meth, &
         nhat_v_meth, &
@@ -686,6 +686,7 @@ subroutine hugginsmodel( &
     integer, intent(inout), target :: nan, ns, nx, ny
     integer, intent(inout) :: algorithm, cov_meth
     integer, intent(inout), dimension(nan,ns), target :: hist
+    integer, intent(inout), dimension(nx), target :: remove   ! = 1 to remove a capture covar from recapture equation
     real(kind=dbl), intent(inout), dimension(nan,ns,nx), target :: capX  ! initial capture covars
     real(kind=dbl), intent(inout), dimension(nan,ns,ny), target :: capY  ! recapture covars
     real(kind=dbl), intent(inout), dimension(nx) :: p_init
@@ -735,6 +736,7 @@ subroutine hugginsmodel( &
     ptr_capX => capX  ! initial capture covariates
     ptr_capY => capY  ! recapture covariates
     ptr_hist => hist
+    ptr_remove => remove
 
 !    ---- Total number of parameters
     np = nx + ny
@@ -748,14 +750,14 @@ subroutine hugginsmodel( &
     do i = 1,nx
         parameters(i) = p_init(i)
     end do
-    do i = nx+1, ptr_np
-        parameters(i) = c_init(i)
-    end do
-
+    if (ny >= 1) then
+        do i = nx+1, ptr_np
+            parameters(i) = c_init(i)
+        end do
+    end if
 
     call Huggins_estim(ptr_np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
         pos_def_code, df)
-
 
     ! output from estim is parameters, loglik, covariance, df, and codes.
     ! previous values are destroyed
@@ -813,13 +815,14 @@ subroutine hugginsmodel( &
         WRITE(6,9040) label,parameters(i),se_param(i)
         9040 format (1X,A9,1x,2(F10.6,1x))
     end do
-    do i = nx+1, nx+ny
-        write(label,"(i5)") (i - nx)
-        label = "Recap" // adjustl(label)
+    if (ny >= 1) then
+        do i = nx+1, nx+ny
+            write(label,"(i5)") (i - nx)
+            label = "Recap" // adjustl(label)
 
-        WRITE(6,9040) label,parameters(i),se_param(i)
-    end do
-
+            WRITE(6,9040) label,parameters(i),se_param(i)
+        end do
+    end if
 
     WRITE(6,9035) df, nx+ny, loglik, deviance, aic
      9035 FORMAT(" ======================================="// &
@@ -938,7 +941,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         ! ---- Hessian and Covariance Section
         if( cov_meth == 1 ) then
 
-            write(6,*) "Calling comp_hessian."
+            write(6,*) "Calling comp_hessian..."
             ! compute hessian matrix by numeric 2nd derivatives.  Covariance is actually the
             ! Hessian.  I'm just using covarinace as storage here
             call comp_hessian(CJS_loglik, np, parameters, loglik, covariance)
@@ -1145,10 +1148,10 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
         if( cov_npd == 0 .and. df > 0 ) then
             df = matrank(covariance, np, np)
-                    write(6,*) "Number of estimated parameters = ", df
-            else
-                    write(6,*) "Number of estimated parameters =  USER OVERRIDE"
-            end if
+            write(6,*) "Number of estimated parameters = ", df
+        else
+            write(6,*) "Number of estimated parameters =  USER OVERRIDE"
+        end if
 
 
         ! ---- Now invert the negative matrix of 2nd derivatives
@@ -1455,11 +1458,16 @@ SUBROUTINE Huggins_obj(p,beta,lnlik,grad)
 
     real(kind=dbl), external :: Huggins_loglik
 
+    !debugging
+    integer :: i
 
 !    Calculate the log-likelihood
+    !write(6,*) "*****CALCULATING LOG LIKE******"
+    !write(6,*) "p=", p, "beta=", (beta(i), i=1,p)
     lnlik = -1.0_dbl * Huggins_loglik(p, beta)
 
 !    Calculate the gradient
+    !write(6,*) "*****CALLING GRADIENT******"
     call Huggins_gradient(p, beta, lnlik, grad)
 
 end subroutine
@@ -1499,14 +1507,14 @@ real function Huggins_loglik(p, beta)
     ! Note: 'p' is for initial capture probability.
     !       'c' is for recapture probability
 
-    real(kind=dbl), dimension(ptr_nx) :: p_beta  ! Coefficients in model for initial captures
-    real(kind=dbl), dimension(ptr_ny) :: c_beta  ! Coefficients in model for subsequent recaptures
+    !real(kind=dbl), dimension(ptr_nx) :: p_beta  ! Coefficients in model for initial captures
+    !real(kind=dbl), dimension(ptr_ny) :: c_beta  ! Coefficients in model for subsequent recaptures
     real(kind=dbl) :: sum_ppart, sum_cpart, xlnlik, denom
     real(kind=dbl), dimension(ptr_ns) :: vpij, vcij
     integer :: i, j
 
-    p_beta = beta(1:ptr_nx)
-    c_beta = beta( (ptr_nx+1):p )
+    !p_beta = beta(1:ptr_nx)
+    !c_beta = beta( (ptr_nx+1):p )
 
     xlnlik=0.0
     do i=1,ptr_nan
@@ -1516,6 +1524,7 @@ real function Huggins_loglik(p, beta)
         !    if( ptr_hist(i,j) == 0 .or. ptr_hist(i,j) == 1 ) cycle
         !    write(6,*) "**** Invalid capture history with a 2 ***: Animal", i, " Occasion", j, " Hist value=", ptr_hist(i,j)
         !end do
+        !if (i==1) write(6,*) "animal=", i, "----------------------------------------"
 
         ! ---- First part of the log-likelihood function, between initial occasion and first capture
         sum_ppart=0.0
@@ -1524,16 +1533,14 @@ real function Huggins_loglik(p, beta)
         vcij = 0.0
         denom = 1.0
 
-        ! Compute probabilities of initial capture for animal i, from first occasion to first capture.
+        ! Compute probabilities of initial capture for animal i.
+        ! We need capture probability from first occasion to last occasion for denominator.
+        ! For numerator, we only need probability of capture from first occasion to first capture.
         ! Recall: ptr_first(i) is occasion of first capture
         !   Covariates for capture model are in capX or ptr_capX
-        !   Covariates for recapture model are in capY or ptr_capY
-        !   A better programmer could figure out how to change pointers and call the same
-        !   routine (procap) to compute probabilities.  Calculation is the same for both.
-        !   But, I couldn't get it, so I wrote a separate routine (prorecap)to handle recaptures that
-        !   used capY.
+        !   If ptr_ny > 0, covariates for recapture model are in capY or ptr_capY
         do j=1,ptr_ns
-            call procap(vpij(j), i, j, p_beta, ptr_nx)
+            call procap(vpij(j), i, j, beta, ptr_nx)  ! beta is at least ptr_nx long, so this works
             denom = denom * (1-vpij(j))
             if( j <= ptr_first(i) ) then
                 sum_ppart=sum_ppart + ptr_hist(i,j)*log(vpij(j)) + &
@@ -1542,10 +1549,11 @@ real function Huggins_loglik(p, beta)
         end do
         denom = log(1-denom)
 
-        ! compute probability of recaptures after initial capture
+        ! compute probability of recaptures after initial capture.
+        ! If ptr_ny == 0, this is same as procap(...)
         if (ptr_first(i) < ptr_ns) then
             do j=(ptr_first(i)+1),ptr_ns
-                call prorecap(vcij(j), i, j, c_beta, ptr_ny )
+                call prorecap(vcij(j), i, j, beta, ptr_nx, ptr_ny, ptr_remove )
                 sum_cpart=sum_cpart + ptr_hist(i,j)*log(vcij(j)) + &
                     (1-ptr_hist(i,j))*log(1.0_dbl-vcij(j))
             end do
@@ -1664,7 +1672,6 @@ subroutine procap(pij, i, j, coef, nx)
 
     sum = 0.0
 
-!write(6,*) "  Cap", i, j, ":", (ptr_capX(i,j,k), k=1,nx)
 
     do k = 1, nx
         sum = sum + coef(k)*ptr_capX(i,j,k)
@@ -1679,19 +1686,25 @@ subroutine procap(pij, i, j, coef, nx)
     z = exp( sum )
     pij = z / (1.0_dbl + z)
 
+!    if( i == 1 ) then
+!        write(6,*) "  Cap", i, j, ":", (ptr_capX(i,j,k), k=1,nx), "p=", pij
+!    end if
+
 end subroutine
 
 ! -------------------------------------------------------------------
 
-subroutine prorecap(cij, i, j, coef, ny)
+subroutine prorecap(cij, i, j, coef, nx, ny, remove)
 !
 !     Subroutine to evaluate the probability of RE-capture for animal i
 !
 !    Input:
 !    i = animial number
 !    j = occasion number
-!    coef = 1 x nx vector of coefficients
-!    nx = number of coefficients
+!    coef = 1 x (nx+ny) vector of coefficients
+!    nx = number of coefficients in capture equation
+!    ny = number of coefficients in recapture equation, could be 0.
+!    remove = vector of 0's and 1's indicating which capture coefficients to remove from recapture equation
 !
 !    Output:
 !    pij = probability of capture for animal i at occasion j
@@ -1703,19 +1716,26 @@ subroutine prorecap(cij, i, j, coef, ny)
     use globevars
     implicit none
 
-    integer, intent(in) :: ny, i, j
-    real(kind=dbl), intent(in), dimension(ny) :: coef
+    integer, intent(in) :: nx, ny, i, j
+    real(kind=dbl), intent(in), dimension(nx+ny) :: coef
     real(kind=dbl), intent(out) :: cij
+    integer, intent(in), dimension(nx) :: remove
 
     real(kind=dbl) :: sum, z
     integer :: k
 
     sum = 0.0
 
-!write(6,*) "Recap", i, j, ":", (ptr_capY(i,j,k), k=1,ny)
 
-    do k = 1, ny
-        sum = sum + coef(k)*ptr_capY(i,j,k)
+
+    do k = 1, nx+ny
+        if (k <= nx) then
+            if (remove(k) == 0) then
+                sum = sum + coef(k)*ptr_capX(i,j,k)
+            end if
+        else
+            sum = sum + coef(k)*ptr_capY(i,j,k-nx)
+        end if
     end do
 
     ! Careful, these two statements set boundaries where gradients fail (not differentiable)
@@ -1726,6 +1746,11 @@ subroutine prorecap(cij, i, j, coef, ny)
 
     z = exp( sum )
     cij = z / (1.0_dbl + z)
+
+!    if (i==1) then
+!        write(6,*) "Recap", i, j, ":", (ptr_capY(i,j,k), k=1,ny), "p=", cij
+!        write(6,*) "     nx=", nx, "ny=", ny, "coef=", (coef(k),k=1,nx+ny)
+!    end if
 
 end subroutine
 
@@ -2654,24 +2679,24 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
 
     integer :: i,j,k,l
     real(kind=dbl) :: sum, x1, x2
-    real(kind=dbl), dimension(ptr_nx) :: p_beta
-    real(kind=dbl), dimension(ptr_ny) :: c_beta
+    !real(kind=dbl), dimension(ptr_nx) :: p_beta
+    !real(kind=dbl), dimension(ptr_ny) :: c_beta
 
-    p_beta = parameters(1:nx)
-    c_beta = parameters( (nx+1):np )
+    !p_beta = parameters(1:nx)
+    !c_beta = parameters( (nx+1):np )
 
 
     ! Initial capture probability first
     do i = 1,nan
         do j = 1,ns
-            call procap(p_hat(i,j), i, j, p_beta, nx)
+            call procap(p_hat(i,j), i, j, parameters, nx)
 
             SUM=0.0
             DO K=1,nx
                 x1 = ptr_capX(i,j,k)
                 DO L=1,nx
                     x2 = ptr_capX(i,j,L)
-                     SUM=SUM + (X1 * X2 * covariance(K,L))
+                    SUM = SUM + (X1 * X2 * covariance(K,L))
                 end do
             end do
 
@@ -2687,14 +2712,28 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
     do i = 1,nan
         do j = 1,ns
 
-            call prorecap(c_hat(i,j), i, j, c_beta, ny)
+            call prorecap(c_hat(i,j), i, j, parameters, nx, ny, ptr_remove)
 
             SUM=0.0
-            DO K=1,ny
-                x1 = ptr_capY(i,j,k)
-                DO L=1, ny
-                    x2 = ptr_capY(i,j,L)
-                     SUM=SUM + (X1 * X2 * covariance(k+ptr_nx,L+ptr_nx))
+            DO K=1,nx+ny
+
+                if (k <= nx) then
+                    if (ptr_remove(k) == 1) cycle
+                    x1 = ptr_capX(i,j,k)
+                else
+                    x1 = ptr_capY(i,j,k-nx)
+                end if
+
+                DO L=1, nx+ny
+
+                    if (L <= nx) then
+                        if (ptr_remove(L) == 1) cycle
+                        x2 = ptr_capX(i,j,L)
+                    else
+                        x2 = ptr_capY(i,j,L-nx)
+                    end if
+
+                    SUM=SUM + (X1 * X2 * covariance(k,L))
                 end do
             end do
 
@@ -2759,7 +2798,7 @@ subroutine huggins_n_hat(nan,ns,np,nx,beta,covariance,p_hat,nhat_v_meth, n_hat,s
 
         case (2)
 
-            ! Future bootstrap variance estimate of variance, but no method 2 yet. 
+            ! Future bootstrap variance estimate of variance, but no method 2 yet.
 
         case (:1, 3:) ! method == 1 or anything besides 2
 

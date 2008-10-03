@@ -4,30 +4,70 @@ nx <-   x$aux$nx
 ny <-   x$aux$ny
 
 cap.coef <- round( x$capcoef, 5 )
-recap.coef <- round( x$recapcoef, 5 )
 se.cap <- round( x$se.capcoef, 5 )
-se.recap <- round( x$se.recapcoef, 5 )
 
-if(nx > ny){
-    recap.coef<- c(recap.coef, rep("", nx-ny))
-    se.recap  <- c(se.recap, rep("", nx-ny))
-} else {
-    cap.coef<- c(cap.coef, rep("", ny-nx))
-    se.cap  <- c(se.cap, rep("", ny-nx))    
+
+if( ny > 0 ){
 }
 
 cat("Call:\n")
 print(x$aux$call)
 cat("\n")
 
-cat(paste( format( c(" Capture var", names(cap.coef))), 
-    format( c(" Est", cap.coef) ),  
-    format( c(" SE", se.cap) ),
-    "  ",
-    format( c(" Recapture var", names(recap.coef))), 
-    format( c(" Est", recap.coef) ), 
-    format( c(" SE", se.recap) ),
-    "\n", sep="  "))
+if( ny <= 0 ){
+    cat(" Capture and Recapture model:\n")
+    coefmat <- paste( format( c(" Variable", names(cap.coef))), 
+                      format( c(" Est", cap.coef) ),  
+                      format( c(" SE", se.cap) ),
+                      sep="  ")
+} else {
+    recap.coef <- cap.coef[ !x$remove ]
+    se.recap <- se.cap[ !x$remove ]
+    
+    if( length(recap.coef) == 0 ){
+        # All capture covars have been removed
+        allgone <- TRUE
+    } else {
+        allgone <- FALSE
+        nms <- paste("C:", names(recap.coef), sep="")
+        fixed <- rep("(fixed)", length(recap.coef))
+    }
+
+
+    recap.coef <- c( recap.coef, round( x$recapcoef, 5 ))
+    se.recap <- c( se.recap, round( x$se.recapcoef, 5 ))
+    if( allgone ){
+        nms <- names(x$recapcoef)
+        fixed <- rep(NULL, length(recap.coef))
+    } else {
+        nms <- c( nms, paste("B:", names(x$recapcoef), sep=""))
+        fixed <- c( fixed, rep("", length(x$recapcoef)))
+    }    
+
+    lc <- length(cap.coef)
+    lr <- length(recap.coef)
+    if( lc > lr ){
+        recap.coef <- c(recap.coef, rep("", lc - lr))
+        se.recap  <- c(se.recap, rep("", lc - lr))
+        fixed <- c(fixed, rep("", lc - lr))
+        nms <- c(nms, rep("", lc - lr))
+    } else if (lc < lr) {
+        cap.coef<- c(cap.coef, rep("", lr - lc))
+        se.cap  <- c(se.cap, rep("", lr - lc))    
+    }
+
+    coefmat <- paste(   format( c(" Capture Model", names(cap.coef))), 
+                        format( c(" Est", cap.coef) ),  
+                        format( c(" SE", se.cap) ),
+                        "  ",
+                        format( c(" Recapture Model", nms)), 
+                        format( c(" Est", recap.coef) ), 
+                        format( c(" SE", se.recap) ),
+                        sep="  ")
+    coefmat <- paste(coefmat, c("",fixed), sep="")
+                            
+}
+cat( paste(coefmat, "\n"))
 
 cat("\nPopulation Size Estimate (se): ")
 cat(paste( round(x$n.hat, 4), " (", round(x$se.n.hat,4), ")\n", sep=""))
