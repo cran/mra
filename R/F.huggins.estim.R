@@ -1,5 +1,5 @@
 F.huggins.estim <- function(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
-    algorithm=1, cov.meth=1, nhat.v.meth=1, df=NA){
+    nhat.v.meth=1, df=NA, control=mra.control()){
 
 start.sec <- proc.time()[3]
 
@@ -24,7 +24,6 @@ if( any(zero.ind) ){
 }
 
 
-algorithm <- 1
 hist.name <- deparse(substitute(histories))
 cr.call <- match.call()
 nan <- nrow( histories )
@@ -72,14 +71,14 @@ if( missing(recap.init) ){
     recap.init <- c(recap.init, rep(0, ny-length(recap.init)))
 } 
 
-
-
-#   Determine covariance method.  1 = numeric 2nd derivatives, 2 = inverse of optimization Hessian
-if( !any( cov.meth == c(1,2) ) ){
-    cat("Covariance method must be either 1 = numeric 2nd derivatives (default), or 2 = Hessian of optimazation\n")
-    cat("Using 2nd derivative method (cov.meth = 1).\n")
-    cov.meth <- 1 
+#   Set up the tolerance vector, if not specified, or if not long enough
+if( length(control$tol) < (nx+ny) ){
+    control$tol <- rep(control$tol, trunc((nx+ny) / length(control$tol))+1)[1:(nx+ny)]
+} else if( length(control$tol > (nx+ny)) ){
+    control$tol <- control$tol[1:(nx+ny)]
 }
+
+
 
 #   Do the estimation, but first allocate room for answers
 loglik <- deviance <- aic <- qaic  <- lower.ci <- upper.ci <- 0
@@ -94,108 +93,90 @@ if( is.na(df) ){
     df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
 }
 
-cat( "Calling MRA DLL to maximize likelihood.  Please wait...\n")
+if( control$trace ) cat( "Calling MRA DLL to maximize likelihood.  Please wait...\n")
 
 ans <- .Fortran( "hugginsmodel", 
-        as.integer(nan), 
-        as.integer(ns), 
-        as.integer(nx), 
-        as.integer(ny),
-        as.integer(histories),  
-        as.integer(remove.vec),
-        as.integer(algorithm), 
-        as.integer(cov.meth), 
-        as.integer(nhat.v.meth), 
-        as.double(capX),
-        as.double(recapX), 
-        as.double(cap.init),
-        as.double(recap.init), 
-        as.double(loglik), 
-        as.double(deviance), 
-        as.double(aic),   
-        as.double(parameters),
-        as.double(se.param), 
-        as.double(covariance), 
-        as.double(p.hat), 
-        as.double(se.p.hat), 
-        as.double(c.hat), 
-        as.double(se.c.hat),
-        as.double(n.hat), 
-        as.double(se.n.hat), 
-        as.double(lower.ci),
-        as.double(upper.ci),
-        as.integer(exit.code), 
-        as.integer(cov.code), 
-        as.integer(df.estimated), 
+        nan         = as.integer(nan), 
+        ns          = as.integer(ns), 
+        nx          = as.integer(nx), 
+        ny          = as.integer(ny),
+        histories   = as.integer(histories),  
+        remove.vac  = as.integer(remove.vec),
+        algorithm   = as.integer(control$algorithm), 
+        cov.meth    = as.integer(control$cov.meth), 
+        nhat.v.meth = as.integer(nhat.v.meth), 
+        capX        = as.double(capX),
+        recapX      = as.double(recapX), 
+        cap.init    = as.double(cap.init),
+        recap.init  = as.double(recap.init), 
+        trace       = as.integer(control$trace),
+        maxfn       = as.integer(control$maxfn),
+        tol         = as.double(control$tol),
+        loglik      = as.double(loglik), 
+        deviance    = as.double(deviance), 
+        aic         = as.double(aic),   
+        parameters  = as.double(parameters),
+        se.param    = as.double(se.param), 
+        covariance  = as.double(covariance), 
+        p.hat       = as.double(p.hat), 
+        se.p.hat    = as.double(se.p.hat), 
+        c.hat       = as.double(c.hat), 
+        se.c.hat    = as.double(se.c.hat),
+        n.hat       = as.double(n.hat), 
+        se.n.hat    = as.double(se.n.hat), 
+        lower.ci    = as.double(lower.ci),
+        upper.ci    = as.double(upper.ci),
+        exit.code   = as.integer(exit.code), 
+        cov.code    = as.integer(cov.code), 
+        df.estimated= as.integer(df.estimated), 
         PACKAGE="mra" )
 
-cat(paste("Returned from MRA. Details in MRA.LOG.\n", sep=""))
+if(control$trace) cat(paste("Returned from MRA. Details in MRA.LOG.\n", sep=""))
 
-#   Set to place in ans of first output.  This makes it easier to add or subtract 
-#   parameters to .Fortran call.  All outputs come after this.
-out.ind <- 14
-
-loglik     <- ans[[out.ind + 0]]
-deviance   <- ans[[out.ind + 1]] 
-aic        <- ans[[out.ind + 2]] 
-parameters <- ans[[out.ind + 3]]
-se.param   <- ans[[out.ind + 4]] 
-covariance <- ans[[out.ind + 5]] 
-p.hat      <- ans[[out.ind + 6]] 
-se.p.hat   <- ans[[out.ind + 7]] 
-c.hat      <- ans[[out.ind + 8]]
-se.c.hat   <- ans[[out.ind + 9]] 
-n.hat      <- ans[[out.ind + 10]]
-se.n.hat   <- ans[[out.ind + 11]]
-lower.ci   <- ans[[out.ind + 12]]
-upper.ci   <- ans[[out.ind + 13]]
-exit.code  <- ans[[out.ind + 14]]
-cov.code   <- ans[[out.ind + 15]]
-df.estimated <- ans[[out.ind + 16]]
 
 # ----- Fortran sets missing standard errors < 0. Reset missing standard errors to NA.
-se.param[ se.param < 0 ] <- NA
+ans$se.param[ ans$se.param < 0 ] <- NA
 
 # ----- R does not preserve the matrix structures in .Fortran call.  Put matricies, 
 #   which are now vectors, back to matricies.
-covariance <- matrix( covariance, nrow=nx+ny ) 
-p.hat      <- matrix( p.hat, nrow=nan )
-se.p.hat   <- matrix( se.p.hat, nrow=nan )
-c.hat      <- matrix( c.hat, nrow=nan )
-se.c.hat   <- matrix( se.c.hat, nrow=nan )
+ans$covariance <- matrix( ans$covariance, nrow=nx+ny ) 
+ans$p.hat      <- matrix( ans$p.hat, nrow=nan )
+ans$se.p.hat   <- matrix( ans$se.p.hat, nrow=nan )
+ans$c.hat      <- matrix( ans$c.hat, nrow=nan )
+ans$se.c.hat   <- matrix( ans$se.c.hat, nrow=nan )
 
 
 
 # ----- Work out exit codes.  Code is returned by VA09AD.
-if( exit.code==0 ){
+if( ans$exit.code==0 ){
     exit.mess = "FAILURE: Initial Hessian not positive definite"
-} else if( exit.code == 1 ){
+} else if( ans$exit.code == 1 ){
     exit.mess = "SUCCESS: Convergence criterion met"
-} else if( exit.code == 2 ){
+} else if( ans$exit.code == 2 ){
     exit.mess = "FAILURE: G'dX > 0, rounding error"
-} else if( exit.code == 3 ){
+} else if( ans$exit.code == 3 ){
     exit.mess = "FAILURE: Likelihood evaluated too many times"
-} else if( exit.code == -1 ){
+} else if( ans$exit.code == -1 ){
     exit.mess = "FAILURE: Algorithm 2 not implimented yet.  Contact Trent McDonald."
 } else {
     exit.mess = "Unknown exit code"
 }
 
-if(algorithm == 1){
-    message <- "Optimization by VA09AD."
+if(control$algorithm == 1){
+    alg.mess <- "Optimization by VA09AD."
 } else {
-    message <- "Unknown optimization routine."
+    alg.mess <- "Unknown optimization routine."
 }
 
-if(cov.meth == 1){
+if(ans$cov.meth == 1){
     cov.mess = "Covariance from numeric derivatives."
-} else if (cov.meth == 2){
+} else if (ans$cov.meth == 2){
     cov.mess = "Covariance from optimization Hessian."
 } else {
     cov.mess = "Unkown covariance method."
 }
 
-if(cov.code == 0){
+if(ans$cov.code == 0){
     cov.mess = paste( cov.mess,  "SUCCESS: Non-singular covariance matrix.")
 } else if( cov.code == 1) {
     cov.mess = paste( cov.mess,  "ERROR: COVARIANCE MATRIX IS SINGULAR.")
@@ -204,23 +185,23 @@ if(cov.code == 0){
 }
 
 # ----- Remove trailing blanks from message
-message <- c( paste( message, exit.mess), cov.mess)
-cat(paste( "\t(", message, ")\n", sep="" ))
+message <- paste(c( alg.mess, exit.mess, cov.mess), "\n")
+if( control$trace ) cat(paste( "\t(", message, ")\n", sep="" ))
 
 # ----- Wipe out the first recapture probability.  Can't have recapture in first period.
-c.hat[,1] <- NA
-se.c.hat[,1] <- NA
+ans$c.hat[,1] <- NA
+ans$se.c.hat[,1] <- NA
 
 # ----- Transfer over coefficients
-capcoef <- parameters[1:nx]
-se.capcoef <- se.param[1:nx]
+capcoef <- ans$parameters[1:nx]
+se.capcoef <- ans$se.param[1:nx]
 names(capcoef) <- cap.names
 names(se.capcoef) <- cap.names
 nms <- paste("cap.",names( capcoef ),sep="")
 
 if( ny >= 1 ){
-    recapcoef <- parameters[(nx+1):(nx+ny)]
-    se.recapcoef <- se.param[(nx+1):(nx+ny)]
+    recapcoef <- ans$parameters[(nx+1):(nx+ny)]
+    se.recapcoef <- ans$se.param[(nx+1):(nx+ny)]
     names(recapcoef) <- recap.names
     names(se.recapcoef) <- recap.names
     nms <- c( nms, paste("recap.",names( recapcoef ), sep="") )
@@ -233,13 +214,13 @@ dimnames(covariance) <- list( nms, nms )
 
 # ----- Fix up number of parameters.
 if( is.na(df) ){
-    df <- df.estimated   # use the rank estimated by MRAWIN
+    df <- ans$df.estimated   # use the rank estimated by MRAWIN
 } else if( df <= 0 ){
     df <- nx+ny  # assume full rank
 } # else use the values supplied by user (unchanged from input)
 
 # ----- Now that df is computed, recompute fit statistics
-aic <- -2*loglik + 2*df
+aic <- -2*ans$loglik + 2*df
 n.eff <- nan * ns
 aicc <- aic + (2*df*(df+1))/(n.eff - df - 1)
 
@@ -257,10 +238,11 @@ aux <- list( call=cr.call, nan=nan, ns=ns, nx=length(capcoef), ny=length(recapco
 # ----- Estimates of N are computed in Fortran.  No need to modify.
 
 # ----- Done. Put into a 'hug' object.
+ex.time <- (proc.time()[3] - start.sec) / 60
 ans <- list( histories=histories, 
     aux=aux, 
-    loglike=loglik, 
-    deviance=deviance, 
+    loglike=ans$loglik, 
+    deviance=ans$deviance, 
     aic=aic, 
     aicc=aicc, 
     capcoef=capcoef, 
@@ -268,36 +250,38 @@ ans <- list( histories=histories,
     recapcoef=recapcoef, 
     se.recapcoef=se.recapcoef,
     remove=remove,
-    covariance=covariance,
-    p.hat=p.hat, 
-    se.p.hat=se.p.hat, 
-    c.hat=c.hat, 
-    se.c.hat=se.c.hat,
+    covariance=ans$covariance,
+    p.hat=ans$p.hat, 
+    se.p.hat=ans$se.p.hat, 
+    c.hat=ans$c.hat, 
+    se.c.hat=ans$se.c.hat,
     df=df, 
+    control=control,
     message=message, 
-    exit.code=exit.code, 
-    cov.code=cov.code, 
-    cov.meth=cov.meth, 
-    n.hat = n.hat, 
-    se.n.hat = se.n.hat, 
-    n.hat.lower = lower.ci, 
-    n.hat.upper = upper.ci,
+    fn.evals = ans$maxfn,
+    ex.time = ex.time,
+    exit.code=ans$exit.code, 
+    cov.code=ans$cov.code, 
+    cov.meth=ans$cov.meth, 
+    n.hat = ans$n.hat, 
+    se.n.hat = ans$se.n.hat, 
+    n.hat.lower = ans$lower.ci, 
+    n.hat.upper = ans$upper.ci,
     n.hat.conf = 0.95, 
-    nhat.v.meth = nhat.v.meth, 
+    nhat.v.meth = ans$nhat.v.meth, 
     num.caught=nan,
     n.effective=n.eff)
 class(ans) <- c("hug", "cr")
 
+#need to check this returned object with the documentation.  
 
-
-
-ex.time <- (proc.time()[3] - start.sec) / 60
-if( ex.time < 0.01666667 ){
-    cat("\t(Execution time < 1 second)\n")
-} else {
-    cat(paste("\t(Execution time =", round(ex.time,2), "minutes)\n"))
+if( control$trace ) {
+    if( ex.time < 0.01666667 ){
+        cat("\t(Execution time < 1 second)\n")
+    } else {
+        cat(paste("\t(Execution time =", round(ex.time,2), "minutes)\n"))
+    }
 }
-
 
 ans
 

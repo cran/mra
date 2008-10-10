@@ -16,7 +16,7 @@
 	the result of calling F.cjs.estim  }
   \item{type}{ string indicating type of residual to return.  Either "pearson" for Pearson
                residuals (i.e., (o - e)/sqrt(e*(1-e))) or "deviance" for deviance 
-               residuals (i.e., 2*sign(o-e)*sqrt{o*log(o/e) + (1-o)*log((1-o)/(1-e))} ) }
+               residuals (i.e., 2*sign(o-e)*sqrt(o*log(o/e) + (1-o)*log((1-o)/(1-e))) ) }
  \item{\dots}{ Additional arguments to other functions. Not used, but must be here 
 		for compatability with the generic \code{residuals} function.
 	    }

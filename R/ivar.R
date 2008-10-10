@@ -1,9 +1,11 @@
-ivar <- function(x, ns=attr(x,"ns"), drop.levels=1){
+ivar <- function(x, ns=attr(x,"ns"), drop.levels=attr(x,"drop.levels")){
 #
 #   Rep a column vector into a matrix of correct size
 #
 
 if( is.null(ns) ) stop( paste("Number of occasions for", deparse(substitute(x)), "not specified"))
+
+if( is.null(drop.levels) ) drop.levels <- 1
 
 if(is.factor(x)){
     x <- as.factor(as.character(x))  # drop unused levels

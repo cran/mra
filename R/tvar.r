@@ -1,9 +1,11 @@
-tvar <- function(x, nan=attr(x,"nan"), drop.levels=1){
+tvar <- function(x, nan=attr(x,"nan"), drop.levels=attr(x,"drop.levels")){
 #
 #   Rep a row vector into a matrix of correct size
 #
 
 if( is.null(nan) ) stop( paste("Number of individuals for", deparse(substitute(x)), "not specified"))
+
+if( is.null(drop.levels) ) drop.levels <- 1
 
 if(is.factor(x)){
     x <- as.factor(as.character(x))  # drop unused levels

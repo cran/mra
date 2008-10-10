@@ -4,10 +4,10 @@
 \title{ Expand Time-varying covariates in models }
 \description{
   	Expands a vector of time-varying values into a 2-d matrix 
-    of the appropriate size for use in MRA model formulas.
+    for use in MRA model formulas.
 }
 \usage{
-tvar(x, nan=attr(x,"nan"), drop.levels=1)
+tvar(x, nan=attr(x,"nan"), drop.levels=attr(x,"drop.levels"))
 }
 \arguments{
   \item{x}{ The vector of time varying values to expand.  This can be 
@@ -19,14 +19,18 @@ tvar(x, nan=attr(x,"nan"), drop.levels=1)
     an error is thrown. }
   \item{drop.levels}{ A vector of integers specifying which levels of a factor 
     to drop.  Only applicable if \code{x} is a factor.  By default, the 
-    first level of all factors is dropped.  \code{drop.levels=length(levels(x))}
-    does the SAS thing and drops the last level of a factor.  Specifying a vector 
-    will drop all levels in the vector.  E.g., \code{drop.levels=c(1,2,7)} drops 
-    the 1st, 2nd, and 7th levels of the factor, whatever they are.  First level 
+    the 'drop.levels' attribute of \code{x} is used.  If \code{x} does not 
+    have a 'drop.levels' attribute, the first level of the factor is dropped.  
+    \code{drop.levels=length(levels(x))}
+    does the SAS thing and drops the last level of a factor.  Specifying multiple 
+    levels to drop is acceptable.
+    E.g., \code{drop.levels=c(1,2,7)} drops 
+    the 1st, 2nd, and 7th levels of the factor.  First level 
     of a factor is first element of \code{levels(x)}.  Second level 
     of a factor is second element of \code{levels(x)}, and so on.  Setting  
     \code{drop.levels} to 0, a negative number, or a number greater than the number 
-    of levels will not drop any levels (this is so-called cell mean coding). }
+    of levels will not drop any levels (this is so-called cell mean coding). 
+    Keep in mind presence of the intercept.}
 }
 
 
@@ -50,13 +54,18 @@ nan <- 30
 ns <- 5
 time.occ <- as.factor(paste("T",1:ns, sep=""))
 attr(time.occ,"nan") <- nan
-time.mat <- tvar(time.occ, drop=ns) # Last occasion is the reference, the SAS and MARK default.
+attr(time.occ,"drop.levels") <- ns
 
+time.mat <- tvar(time.occ) # Last occasion is the reference, the SAS and MARK default.
+
+time.mat <- tvar(as.factor(1:ns),nan,ns) #equivalent to above.
+
+#   Look at 3-d matrix produced when called with factors
 dim(time.mat) <- c(nan,ns,length(levels(time.occ))-1)
 print(time.mat)  # each page is the 2-d matrix used in the fit.
 print(time.mat[1,,])
 
-#  compare the above to 
+#  compare above to 
 tvar( 1:ns, nan )
 
 

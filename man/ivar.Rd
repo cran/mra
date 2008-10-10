@@ -7,7 +7,7 @@
     of the appropriate size for use in MRA model formulas.
 }
 \usage{
-ivar(x, ns=attr(x,"ns"), drop.levels=1)
+ivar(x, ns=attr(x,"ns"), drop.levels=attr(x,"drop.levels"))
 }
 \arguments{
   \item{x}{ The vector of individual varying values to expand.  This can be 
@@ -19,14 +19,17 @@ ivar(x, ns=attr(x,"ns"), drop.levels=1)
     an error is thrown. }
   \item{drop.levels}{ A vector of integers specifying which levels of a factor 
     to drop.  Only applicable if \code{x} is a factor.  By default, the 
-    first level of all factors is dropped.  \code{drop.levels=length(levels(x))}
-    does the SAS thing and drops the last level of a factor.  Specifying a vector 
-    will drop all levels in the vector.  E.g., \code{drop.levels=c(1,2,7)} drops 
+    the 'drop.levels' attribute of \code{x} is used.  If \code{x} does not 
+    have a 'drop.levels' attribute, the first level of the factor is dropped. 
+    \code{drop.levels=length(levels(x))}
+    does the SAS thing and drops the last level of a factor.  Specifying multiple 
+    levels to drop is acceptable. E.g., \code{drop.levels=c(1,2,7)} drops 
     the 1st, 2nd, and 7th levels of the factor, whatever they are.  First level 
     of a factor is first element of \code{levels(x)}.  Second level 
     of a factor is second element of \code{levels(x)}, and so on.  Setting  
     \code{drop.levels} to 0, a negative number, or a number greater than the number 
-    of levels will not drop any levels (this is so-called cell mean coding). }
+    of levels will not drop any levels (this is so-called cell mean coding). 
+    Keep in mind presence of the intercept.}
 }
 
 
@@ -50,13 +53,22 @@ nan <- 30
 ns <- 5
 age <- as.factor(sample( c("J","S1","S2","Adult"), size=nan, replace=TRUE ))
 attr(age,"ns") <- ns
+
+# Note that levels get reordered (by R default, alphabetically)
+attr(age,"drop.levels") <- (1:length(levels(age)))[ levels(age) == "J" ]
+
+age.mat <- ivar(age)  # level J is the reference
 age.mat <- ivar(age, drop=4) # level S2 is the reference
+
+# Look at 3-D matrix produced when called with a factor.
 dim(age.mat) <- c(nan,ns,length(levels(age))-1)
 print(age.mat)  # each page is the 2-d matrix used in the fit.
 print(age.mat[1,,])
 
 age.mat <- ivar(age, drop=c(3,4))  # level S1 and S2 are combined and are the reference
 
+# compare above to 
+ivar( c(1,1,2,2,3,3), 5 )
 
 }
 

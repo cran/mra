@@ -17,7 +17,7 @@
 
 \usage{
 F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
-    algorithm=1, cov.meth=1, nhat.v.meth=1, df=NA)
+    nhat.v.meth=1, df=NA, control=mra.control())
 }
 
 
@@ -67,19 +67,6 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
   \item{recap.init}{ (optional) Vector of initial values for coefficients in the 
     recapture model.  One element 
     per covariate in \code{recapture}. This parameter does not usually need to be specified. }
-  \item{algorithm}{ Integer specifying the maximization algorithm to use.  If \code{algorithm} = 1, 
-    the VA09AD algorithm from the HSL library is used. The VA09AD algorithm is very reliable, 
-    has been tested extensively (same algorithm as Program MARK), and will almost always find the 
-    maximum likelihood estimates. This parameter was added to allow easy addition of other 
-    algorithms in the future, but no other options are currently implemented because VA09AD 
-    works so well. Anything other than 1 is ignored. }
-  \item{cov.meth}{ Integer specifying the covariance estimation method. \code{cov.meth} = 1 
-    takes numerical 2nd partial derivatives.  \code{cov.meth} = 2 inverts the Hessian 
-    of the maximization.  Method 1 (numeric 2nd derivatives) is the preferred method, but
-        is computationally expensive and therefore slower than method 2.  The difference in 
-        speed is minimal when number of parameters < 15. Method 2 variances are 
-        generally very close to method 1 variances, and could be used during initial model 
-        fitting stages when exact estimation of variance may not be necessary.    }
   \item{nhat.v.meth}{ Integer specifying method for computing variance estimate 
     for the population size estimate. Currently, only \code{nhat.v.meth} = 1 is implemented. 
     Plans are for \code{nhat.v.meth} = 2 to be a boot strap estimate of variance.
@@ -93,6 +80,12 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     set to NX+NY = the number of estimated coefficients. Otherwise, if \code{df} > 0, 
     the supplied value is used.  Only AIC, QAIC, AICc, and QAICc are dependent on 
     this value (in their penalty terms). }
+  \item{control}{A list containing named control parameters for the minimization and estimation process. 
+    Control parameters include number of iterations, covariance estimation method, etc.  
+    Although the default values work in the vast majority of cases, changes to these 
+    variables can effect speed and performance for ill-behaved models. See 
+    \code{mra.control()} for a description of the individual control parameters.} 
+  
 }
 
 \details{

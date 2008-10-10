@@ -17,8 +17,8 @@
 }
 \usage{
 F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,  
-	algorithm = 1, cov.meth = 1, nhat.v.meth = 1, c.hat = -1, df = NA,
-	intervals=rep(1,ncol(histories)-1), conf=0.95)
+	nhat.v.meth = 1, c.hat = -1, df = NA,
+	intervals=rep(1,ncol(histories)-1), conf=0.95, control=mra.control())
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -57,19 +57,6 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	to estimate C-hat. Results of TEST 2 and TEST 3 are output only 
 	to the log file ('mrawin.log'). See \code{c.hat} for pooling rules for these 
 	test components to estimate C-hat.}
-  \item{algorithm}{ Integer specifying the maximization algorithm to use.  If \code{algorithm} = 1, 
-	the VA09AD algorithm from the HSL library is used. The VA09AD algorithm is very reliable, 
-	has been tested extensively (same algorithm as Program MARK), and will almost always find the 
-	maximum likelihood estimates. This parameter was added to allow easy addition of other 
-	algorithms in the future, but no other options are currently implemented because VA09AD 
-	works so well. Anything other than 1 is ignored. }
-  \item{cov.meth}{ Integer specifying the covariance estimation method. \code{cov.meth} = 1 
-	takes numerical 2nd partial derivatives.  \code{cov.meth} = 2 inverts the Hessian 
-	of the maximization.  Method 1 (numeric 2nd derivatives) is the preferred method, but
-        is very computationally expensive and therefore much slower than method 2.  Difference in 
-        speed of methods should be minimal when number of parameters < 15. Method 2 variances are 
-     	generally very close to method 1 variances, and could be used during initial model fitting 
-	stages when exact estimation of variance may not be necessary.    }
   \item{nhat.v.meth}{ Integer specifying method for computing variance estimates 
 	of population size estimates. \code{nhat.v.meth} = 1 uses the variance estimator of 
 	Taylor et al. 2002, Ursus, p. 188 which is the so-called Huggins variance estimator, and incorporates 
@@ -112,7 +99,12 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	equal to annual survival cubed, etc.}    
   \item{conf}{Confidence level for the confidence intervals placed around estimates 
     of population size. Default 95\% confidence.}
-	 
+  \item{control}{A list containing named control parameters for the minimization and estimation process. 
+    Control parameters include number of iterations, covariance estimation method, etc.  
+    Although the default values work in the vast majority of cases, changes to these 
+    variables can effect speed and performance for ill-behaved models. See 
+    \code{mra.control()} for a description of the individual control parameters.} 
+ 
 }
 
 \details{
@@ -196,6 +188,7 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	issue commands like fit\$s.hat, fit\$se.s.hat, fit\$n.hat, etc. 
 
  	Components of the returned object are as follows:
+  \item{histories}{The input capture history matrix.}
   \item{aux}{Auxiliary information, mostly stored input values. This is a list containing:
 	\$call, \$nan=number of animals, \$ns=number of samples, \$nx=number of coefficients 
 	in capture model, \$ny=number of coefficients in survival model, \$cov.name=names 
@@ -217,7 +210,6 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{parameters}{Vector of all coefficient estimates, NX capture probability coefficients first, 
 	then NY survival coefficients.  This vector is length NX+NY regardless of estimated DF.}   
   \item{se.param}{Standard error estimates for all coefficients.  Length NX+NY.}
-  \item{se1.param}{Standard error estimates from 'alternate' method.}
   \item{capcoef}{Vector of coefficients in the capture model.  Length NX.}
   \item{se.capcoef}{Vector of standard errors for coefficients in capture model. Length NX.}
   \item{surcoef}{Vector of coefficients in the survival model. Length NY.}
@@ -240,10 +232,23 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
   \item{df}{Number of estimable parameters in the model. df is either the estimated number of independent 
 	parameters (by default) based on rank of the variance matrix, 
 	or NX+NY, or a specified value, depending on the input value of DF parameter.} 
-  \item{message}{A string indicating whether the maximization routine converged.}
+  \item{control}{A list containing the input maximization and estimation control parameters.}
+  \item{message}{A vector of strings interpreting various codes about the estimation. 
+    The messages interpret, in this order, the codes for (1) maximization algorithm used, 
+    (2) exit code from the maximization algorithm (interprets \code{exit.code}), and 
+    (3) covariance matrix code (interprets \code{cov.code}). }
   \item{exit.code}{Exit code from the maximization routine.  Interpretation for \code{exit.code} is in \code{message}.}
   \item{cov.code}{A code indicating the method used to compute the covariance matrix.}
-  \item{cov.meth}{String indicating method used to compute covariance matrix.  Interprets \code{cov.code}.}
+  \item{fn.evals}{The number of times the likelihood was evaluated prior to exit from the minimization routine. 
+    If \code{exit.code} = 3, \code{fn.evals} equals the maximum set in \code{mra.control}.  This, in combination 
+    with the exit codes and execution time, can help detect non-convergence or bad behavior.   }
+  \item{ex.time}{Execution time for the maximization routine, in \emph{minutes}.  This is returned for 
+    2 reasons.  First, this is useful for benchmarking. Second, in conjunction with 
+    \code{exit.code}, \code{cov.code}, and \code{fn.evals}, this could be used to detect ill-behaved 
+    or marginally unstable problems, if you know what you are doing.  Assuming \code{maxfn} is set high 
+    in \code{mra.control()} (e.g., 1000), 
+    if \code{exit.code = 1} but the model takes a long time to execute relative to similarly sized problems, 
+    it could indicate unstable or marginally ill-behaved models. }  
   \item{n.hat}{Vector of Horvitz-Thompson estimates of population size.  The Horvitz-Thompson 
     estimator of size is, 
     \deqn{\hat{N}_{ij} = \sum_{i=1}^{NAN} \frac{h_{ij}}{\hat{p}_{ij}}}{N(ij) = sum( h(ij) / p(ij))}
@@ -292,8 +297,8 @@ McDonald, T. L., and S. C. Amstrup. 2001. Estimation of population size using
  }
 \author{ Trent McDonald, WEST-INC, tmcdonald@west-inc.com }
 
-\seealso{ \code{\link{print.cjs}}, \code{\link{residuals.cjs}}, \code{\link{plot.cjs}}, 
-  \code{\link{F.cjs.covars}}, \code{\link{F.cjs.gof}} }
+\seealso{ \code{\link{tvar}}, \code{\link{ivar}}, \code{\link{print.cjs}}, \code{\link{residuals.cjs}}, \code{\link{plot.cjs}}, 
+  \code{\link{F.cjs.covars}}, \code{\link{F.cjs.gof}}, \code{\link{mra.control}} }
 
 \examples{
 

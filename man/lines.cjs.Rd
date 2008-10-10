@@ -19,7 +19,7 @@
 		represented in the 1st, 4th, and 10th rows of the capture history matrix are plotted. 
 		Applies to survival estimates only. }
   \item{occasions}{ Sampling occasions to plot.  This must match the occasions argument to 
-		the last \code{plot.cjs}.  If the first element of \code{occasions} is $\leq$ 0, 
+		the last \code{plot.cjs}.  If the first element of \code{occasions} is <= 0, 
 		all occasions are plotted.  Otherwise, only occasions listed in \code{occasions}
 		are plotted.}
   \item{\dots}{Additional arguments to \code{lines} (for N estimates) or \code{matlines} (for survival 
