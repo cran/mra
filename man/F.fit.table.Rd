@@ -8,8 +8,8 @@
 \description{
     Compiles a table of fit statistics from a list of MRA fitted objects contained in the 
     .Globalenv (i.e., 'working') environment.  The table produced by this routine 
-    contains model name and the choosen fit statistic (such as AIC or QAIC), and is 
-    sorted by that fit statistic.  
+    contains model name, fit statistics (AICc or QAICc), and is ranked by
+    (sorted by) one of these fit statistics.  
 }
 
 \usage{
@@ -31,8 +31,8 @@ F.fit.table( fits=ls(pat="^fit"), rank.by= "qaicc" )
 }
 
 \details{
-    A rudimentary check for convergence is done on each fitted model.  If the routine determines
-    that a model did not converge, the model is included in the table, but the model's fit 
+    A rudimentary check for convergence is done on each fitted model.  If this routine believes
+    a model did not converge, the model is still included in the table, but the model's fit 
     statistics are set to \code{Inf}. The test for whether a model converged is 
     \code{(fit$exit.code == 1) & (fit$cov.code == 0) & (fit$df > 0)}, where \code{fit} is 
     the fitted object.
@@ -42,8 +42,7 @@ F.fit.table( fits=ls(pat="^fit"), rank.by= "qaicc" )
 
 }
 
-\value{A data frame, sorted by \code{fit.stat.to.use}, with the following columns
-
+\value{A data frame, sorted by \code{rank.by}, with the following columns
   \item{model.num}{Model number assigned by this routine, equal to the position of the 
     model in the input list of fits.}
   \item{model.name}{Name of the fitted object.}
@@ -82,17 +81,17 @@ F.fit.table( fits=ls(pat="^fit"), rank.by= "qaicc" )
 data(dipper.histories)
 ct <- as.factor( paste("T",1:ncol(dipper.histories), sep=""))
 attr(ct,"nan")<-nrow(dipper.histories)
-dipper.01 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(ct,drop=c(1,6,7)), dipper.histories )
+dipr.01 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(ct,drop=c(1,6,7)), dipper.histories )
 
 ## Linear trend in survival
 cT <- 1:ncol(dipper.histories)
-dipper.02 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(cT, nan=nrow(dipper.histories)), dipper.histories )
+dipr.02 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(cT, nan=nrow(dipper.histories)), dipper.histories )
 
 ## No trend in survival
-dipper.03 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~1, dipper.histories )
+dipr.03 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~1, dipper.histories )
 
 ## Summary table
-F.fit.table( ls(pat="^dipper") )
+F.fit.table( ls(pat="^dipr") )
 
 }
 

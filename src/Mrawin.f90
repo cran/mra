@@ -602,7 +602,7 @@ subroutine cjsmod( nan, &
         aic=deviance + 2*df
 
         if (c_hat > 1.0D0) then
-               qaic = deviance/c_hat + 2*df
+            qaic = deviance/c_hat + 2*df
         else
             qaic = aic
         end if

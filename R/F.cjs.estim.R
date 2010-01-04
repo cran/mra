@@ -97,6 +97,7 @@ if( is.na(df) ){
 
 if(control$trace) cat( "Calling MRA DLL to maximize likelihood.  Please wait...\n")
 
+
 ans <- .Fortran( "cjsmod", 
         nan         = as.integer(nan), 
         ns          = as.integer(ns), 
@@ -123,7 +124,7 @@ ans <- .Fortran( "cjsmod",
         chisq.vif   = as.double(chisq.vif), 
         df.vif      = as.double(df.vif), 
         parameters  = as.double(parameters),
-        se.parm     = as.double(se.param), 
+        se.param    = as.double(se.param), 
         covariance  = as.double(covariance), 
         p.hat       = as.double(p.hat), 
         se.p.hat    = as.double(se.p.hat), 
