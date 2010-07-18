@@ -11,9 +11,6 @@ if( missing(histories) ){
 if( missing(capture) ){
     stop("Capture covariates must be specified")
 }
-if( missing(recapture) ){
-    stop("Re-capture covariates must be specified")
-}
 
 if( length(union( unique(histories), c(0,1))) > 2 ) stop("Capture histories must consist of 0's and 1's only.")
 

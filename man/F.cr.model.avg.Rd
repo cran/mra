@@ -6,8 +6,8 @@
 \title{ F.cr.model.avg - Model averaging of mark-recapture parameters. }
 
 \description{
-    Computes model averaged estimates of survival, capture probability, population size
-    estimates, or beta coefficients from a set of previously fitted MRA objects.
+    Computes model averaged estimates of survival, capture probability, or population size
+    estimates from a set of previously fitted MRA objects.
 }
 
 \usage{
@@ -24,11 +24,11 @@ F.cr.model.avg( fits=ls(pat="^fit"), what="survival", fit.stat="qaicc" )
     "fit1.01", "fit1.02", and "fit1.03", \code{fits} should equal \code{c("fit1.01", "fit1.02", "fit1.03")},
     or \code{ls(pat="^fit1")}, assuming no other objects in the working directory start with "fit1".}
   \item{what}{A text string naming the parameter of model fits to average.  Choices are "survival" (the 
-    default), "capture", "n.hat", and "beta".  Only the first character is inspected (e.g., "c" is 
+    default), "capture", and "n.hat".  Only the first character is inspected (e.g., "c" is 
     equivalent to "capture"). }  
   \item{fit.stat}{A string (scalar) naming the model fit statistic to use when computing 
     model weights.  Possible values
-    are: "qaicc" (the default), and "aicc".}
+    are: "qaicc" (the default), "qaic", "aicc", and "aic".}
 }
 
 \details{

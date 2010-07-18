@@ -63,11 +63,11 @@ function( x, type="n", ci=TRUE, smooth=TRUE, occasions=-1, animals=-1,
 			#	myylim <- ylim
 			#}
 
-			plot( occasion, n.hat, 
-				type="n", xaxt="n", ...)
+			plot( range(occasion), range(n.hat,lower.ci,upper.ci), 
+				type="n", xaxt="n", xlab="Occasion", ylab="N estimate", ...)
 			axis( side=1, at=occasion, labels=nms )
-			lines(occasion, lower.ci, type="l", lty=1)
-			lines(occasion, upper.ci, type="l", lty=1)
+			lines(occasion, lower.ci, type="l", lty=2)
+			lines(occasion, upper.ci, type="l", lty=2)
 			lines(occasion, n.hat, type="b")
 		} else {
 

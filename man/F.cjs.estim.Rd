@@ -16,9 +16,8 @@
 	to external covariates.  
 }
 \usage{
-F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,  
-	nhat.v.meth = 1, c.hat = -1, df = NA,
-	intervals=rep(1,ncol(histories)-1), conf=0.95, control=mra.control())
+F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,  nhat.v.meth = 1, 
+c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, link="logit", control=mra.control())
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -44,8 +43,14 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	0 in cell (i,j) means animal i was not captured on occasion j, 1 in cell (i,j) means animal 
 	i was captured on occasion j and released live back into the population, 2 in cell (i,j) means 
 	animal i was captured on occasion j and was not released back into the population (e.g., it died).
-	Animals with '2' as the last non-zero in their histories are 'censored'. I.e., Animals with 
-	2's are 'removed' from the likelihood after the occasion with the 2. }
+	Animals with '2' as the last non-zero entry of their history are considered 'censored'. Their 
+    lack of capture information  
+	is removed from the likelihood after the occasion with the 2. Rows of all zeros (i.e., no captures) are allowed
+    in the history matrix, but do not affect coefficient or population size estimates.  A warning is thrown 
+    if rows of all zeros exist.  Capture and survival probabilities are 
+    computed for animals with all zero histories.  In this way, it is possible to have the routine 
+    compute capture or survival estimates for combinations of covariates that do not exist in the data
+    by associating the covariate combinations with histories that have all zero entries.}
   \item{cap.init}{ (optional) Vector of initial values for coefficients in the capture model.  One element 
 	per covariate in \code{capture}. The default value usually works. }
   \item{sur.init}{ (optional) Vector or initial values for coefficients in the survival model.  One element 
@@ -99,6 +104,20 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 	equal to annual survival cubed, etc.}    
   \item{conf}{Confidence level for the confidence intervals placed around estimates 
     of population size. Default 95\% confidence.}
+  \item{link}{The link function to be used.  The link function converts linear predictors in the 
+    range (-infinity, infinity) to probabilities in the range (0,1).  Valid values for the link 
+    function are "logit" (default), "sine", and "hazard".  
+     \itemize{
+        \item The "logit" link is \eqn{\eta = log( \frac{p}{1 - p} )}{eta = log( p / (1 - p) )} with 
+            inverse \eqn{p = \frac{1}{1 + exp(-\eta)}}{p = 1 / (1 + exp(-eta))}.  
+        \item The "sine" link is \eqn{\eta = \frac{100asin( 2p - 1 )}{\pi}}{eta = 100*asin( 2*p - 1 ) / pi }, which ranges from -100 to 100. 
+            The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/100 )}{2}}{p = 0.5*(1 + sin( eta*pi/100 ))} for 
+            values of \eqn{\eta}{eta} between 
+            -100 and 100.  For values of \eqn{\eta}{eta} < -100, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 100, \eqn{p} = 1.
+        \item The "hazard" link is \eqn{\eta = 20log( -log( 1 - p ))}{eta = 20*log( -log( 1 - p ))}, with inverse 
+        \eqn{1 - exp( -exp( \frac{\eta}{20} ))}{1 - exp( -exp( eta/20 ))}.
+     }
+    } 
   \item{control}{A list containing named control parameters for the minimization and estimation process. 
     Control parameters include number of iterations, covariance estimation method, etc.  
     Although the default values work in the vast majority of cases, changes to these 
@@ -182,19 +201,37 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
 
 }
 
+\note{MARK Users:  Due to differences in the way MRA and MARK parameterize the sine link, \emph{coefficient} 
+    estimates will differ between the two packages when this link is used to fit the same model in both packages.  
+    The fit (measured by deviance, AIC, etc.) will agree between the two packages.  Capture and survival probability
+    estimates will also agree between the two packages.  
+    
+    MARK does not contain a hazard rate link function. 
+}
+
+
 \value{An object (list) of class c("cjs","cr") with many components.  Use \code{print.cr} to print 
 	it nicely. Use \code{names(fit)}, where the call was \code{fit <- F.cr.estim(...)}, 
 	to see names of all returned components. To see values of individual components, 
-	issue commands like fit\$s.hat, fit\$se.s.hat, fit\$n.hat, etc. 
+	issue commands like fit$s.hat, fit$se.s.hat, fit$n.hat, etc. 
 
  	Components of the returned object are as follows:
   \item{histories}{The input capture history matrix.}
-  \item{aux}{Auxiliary information, mostly stored input values. This is a list containing:
-	\$call, \$nan=number of animals, \$ns=number of samples, \$nx=number of coefficients 
-	in capture model, \$ny=number of coefficients in survival model, \$cov.name=names 
-	of coefficients, \$ic.name=name of capture history matrix, \$mra.version=
-	version number of this package, \$R.version=R version used for estimation,
-	\$run.date=date the model was estimated.}
+  \item{aux}{Auxiliary information about the fit, mostly stored input values. This is a list containing 
+    the following components:
+    \itemize{
+        \item call = original call
+        \item nan = number of animals
+        \item ns = number of samples = number of capture occasions
+        \item nx = number of coefficients in capture model
+        \item ny = number of coefficients in survival model
+        \item cov.name = names of all coefficients
+        \item ic.name = name of capture history matrix. 
+        \item mra.version =	version number of MRA package used to estimate the model
+        \item R.version = R version used for during estimation
+        \item run.date = date the model was estimated.
+    }
+  }  
   \item{loglik}{Maximized CJS likelihood value for the model}
   \item{deviance}{Model deviance = -2*\code{loglik}.  This is relative deviance, see help for 
 	\code{F.sat.lik}.}
@@ -237,7 +274,16 @@ F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,
     The messages interpret, in this order, the codes for (1) maximization algorithm used, 
     (2) exit code from the maximization algorithm (interprets \code{exit.code}), and 
     (3) covariance matrix code (interprets \code{cov.code}). }
-  \item{exit.code}{Exit code from the maximization routine.  Interpretation for \code{exit.code} is in \code{message}.}
+  \item{exit.code}{Exit code from the maximization routine.  Interpretation for \code{exit.code} is in \code{message}.
+    Exit codes are as follows: 
+    \itemize{
+        \item exit.code = 0: FAILURE: Initial Hessian not positive definite.
+        \item exit.code = 1: SUCCESS: Convergence criterion met.
+        \item exit.code = 2: FAILURE: G'dX > 0, rounding error.
+        \item exit.code = 3: FAILURE: Likelihood evaluated too many times.
+        \item exit.code =-1: FAILURE: Unknown optimization algorithm."
+    }      
+  }
   \item{cov.code}{A code indicating the method used to compute the covariance matrix.}
   \item{fn.evals}{The number of times the likelihood was evaluated prior to exit from the minimization routine. 
     If \code{exit.code} = 3, \code{fn.evals} equals the maximum set in \code{mra.control}.  This, in combination 
@@ -302,7 +348,8 @@ McDonald, T. L., and S. C. Amstrup. 2001. Estimation of population size using
 
 \examples{
 
-\donttest{
+%\donttest{
+
 ## Fit CJS model to dipper data, time-varying capture and survivals.
 ## Method 1 : using factors
 data(dipper.histories)
@@ -327,7 +374,7 @@ x3.a[,ncol(dipper.histories)] <- 999
 dipper.cjs2 <- F.cjs.estim( ~x3+x4+x5+x6+x7, ~x2+x3.a+x4+x5, dipper.histories )
 # compare dipper.cjs2 to dipper.cjs
 
-}
+%}
 
 }
 

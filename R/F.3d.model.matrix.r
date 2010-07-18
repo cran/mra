@@ -5,7 +5,7 @@ F.3d.model.matrix <- function( formula, d1, d2 ){
 #   formula = formula object without or without response.
 #       response is ignored.
 #   d1 = magnitude of dimension 1 = number of rows = nan
-#   d2 = magnitude of dimension 2 = number of cols = ns
+#   d2 = Magnitude of dimension 2 = number of cols = ns
 
     call <- match.call()
     contrasts <- NULL

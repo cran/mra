@@ -6,7 +6,7 @@
 \title{ F.fit.table - Produce a summary table of model fit statistics. }
 
 \description{
-    Compiles a table of fit statistics from a list of MRA fitted objects contained in the 
+    A utility function to compile a table of fit statistics from a list of MRA fitted objects contained in the 
     .Globalenv (i.e., 'working') environment.  The table produced by this routine 
     contains model name, fit statistics (AICc or QAICc), and is ranked by
     (sorted by) one of these fit statistics.  
@@ -32,13 +32,15 @@ F.fit.table( fits=ls(pat="^fit"), rank.by= "qaicc" )
 
 \details{
     A rudimentary check for convergence is done on each fitted model.  If this routine believes
-    a model did not converge, the model is still included in the table, but the model's fit 
+    a model did not converge, the model is included in the table, but the model's fit 
     statistics are set to \code{Inf}. The test for whether a model converged is 
     \code{(fit$exit.code == 1) & (fit$cov.code == 0) & (fit$df > 0)}, where \code{fit} is 
     the fitted object.
 
     Fitted objects are pulled from the \code{.GlobalEnv} environment.  Usually, this is the 
-    current working directory.
+    current working directory.  Currently, there is no way to pull fits from another environment, but 
+    a savy R programmer could modify the \code{where} argument of the \code{get} command embedded in 
+    this routine.
 
 }
 

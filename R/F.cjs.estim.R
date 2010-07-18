@@ -1,6 +1,7 @@
 F.cjs.estim <- function(capture, survival, histories, cap.init, sur.init, 
     group, nhat.v.meth=1, 
-    c.hat=-1.0, df=NA, intervals=rep(1,ncol(histories)-1), conf=0.95, 
+    c.hat=-1.0, df=NA, intervals=rep(1,ncol(histories)-1), 
+    conf=0.95, link="logit", 
     control=mra.control() ){
 
 start.sec <- proc.time()[3]
@@ -95,6 +96,18 @@ if( is.na(df) ){
     df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
 }
 
+
+#   Re-code the link specification to integers
+if( link=="logit" ){
+    link.code <- 1
+} else if( link == "sine" ){
+    link.code <- 2
+} else if( link == "hazard" ){
+    link.code <- 3
+} else {
+    stop("Unknown link function specified.")
+}
+
 if(control$trace) cat( "Calling MRA DLL to maximize likelihood.  Please wait...\n")
 
 
@@ -109,6 +122,7 @@ ans <- .Fortran( "cjsmod",
         algorithm   = as.integer(control$algorithm), 
         cov.meth    = as.integer(control$cov.meth), 
         trace       = as.integer(control$trace),
+        link        = as.integer(link.code),
         nhat.v.meth = as.integer(nhat.v.meth), 
         capX        = as.double(covars$capX), 
         survX       = as.double(covars$survX), 
@@ -139,7 +153,6 @@ ans <- .Fortran( "cjsmod",
         PACKAGE="mra" 
         ) 
 
-#   Remember to add PACKAGE="mra" back into the .Fortran call above.
 
 if( control$trace ) cat(paste("Returned from MRAWIN. Fitting details written to MRA.LOG.\n", sep=""))
 
@@ -149,7 +162,7 @@ ans$se.param[ ans$se.param < 0 ] <- NA
 
 # ----- R does not preserve the matrix structures in .Fortran call.  Put matricies, 
 #   which are now vectors, back to matricies.
-ans$covariance <- matrix( ans$covariance, nrow=nx+ny ) 
+covariance <- matrix( ans$covariance, nrow=nx+ny ) 
 ans$p.hat      <- matrix( ans$p.hat, nrow=nan )
 ans$se.p.hat   <- matrix( ans$se.p.hat, nrow=nan )
 ans$s.hat      <- matrix( ans$s.hat, nrow=nan )
@@ -257,6 +270,7 @@ aux <- list( call=cr.call,
         ns=ns, 
         nx=nx, 
         ny=ny, 
+        link=link,
         cov.name=c(names(capcoef), names(surcoef)), 
         ic.name=hist.name, 
         mra.version=packageDescription("mra")$Version, 
@@ -300,14 +314,14 @@ ans <- list( histories=histories,
     se.capcoef=se.capcoef, 
     surcoef=surcoef, 
     se.surcoef=se.surcoef, 
-    covariance=ans$covariance,
+    covariance=covariance,
     p.hat=ans$p.hat, 
     se.p.hat=ans$se.p.hat, 
     s.hat=ans$s.hat, 
     se.s.hat=ans$se.s.hat, 
     df=df, 
     control=control,
-    message=paste(c(alg.mess,exit.mess,cov.mess),"\n"), 
+    message=c(alg.mess,exit.mess,cov.mess), 
     exit.code=ans$exit.code, 
     cov.code=ans$cov.code, 
     fn.evals=ans$maxfn,
@@ -324,11 +338,16 @@ class(ans) <- c("cjs", "cr")
 
 
 
-#   Compute fitted and residual components
-ans$fitted <- predict( ans )
-ans$residuals <- residuals( ans, type="pearson" )  
-ans$resid.type <- "pearson"
-
+#   Compute fitted and residual components, if converged
+if( ans$exit.code == 1 ){
+    ans$fitted <- predict( ans )
+    ans$residuals <- residuals( ans, type="pearson" )  
+    ans$resid.type <- "pearson"
+} else {
+    ans$fitted <- NA
+    ans$residuals <- NA  
+    ans$resid.type <- NA
+}
 
 if( control$trace ){
     if( ex.time < 0.01666667 ){

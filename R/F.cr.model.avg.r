@@ -41,9 +41,8 @@ for( f in fits ){
 	} else if( substring(what, 1,1) == "n" ){
 		stats    <- rbind( stats, c(fit$n.hat) )
 		se.stats <- rbind( se.stats, c(fit$se.n.hat) )
-	} else if( substring(what, 1,1) == "b" ){
-		stats    <- rbind( stats, c(fit$parameters) )
-		se.stats <- rbind( se.stats, c(fit$se.param) )
+	} else {
+        stop(paste("Invalid option. Cannot model average '", what, "'", sep=""))
 	}
 
 
@@ -62,11 +61,10 @@ wi.array <- exp( -0.5 * delta.AIC ) / sum( exp( -0.5 * delta.AIC ), na.rm = TRUE
 
 
 #	Calculate the model averaged real parameters and standard errors (Burnham and Anderson 2002 pages 150 and 162):
-#	Note the automatic replication of w.array across columns.  stats is n x m, w.array is 1 x n
+#	Note the automatic replication of w.array across columns.  stats is n x m, w.array is  n x 1
+wi.array <- matrix( rep(wi.array, ncol(stats)), nrow(stats))
 a1 <- stats * wi.array
 theta.average <- apply( a1, 2, sum, na.rm = TRUE )
-
-
 
 var.theta <- se.stats^2
 a1 <- matrix( theta.average, nrow=nrow(stats), ncol=ncol(stats), byrow=TRUE )
@@ -86,10 +84,8 @@ se.theta.average <- apply( a2, 2, sum, na.rm = TRUE )
 a2 <- wi.array * se.stats  
 se.conditional.theta.average <- apply( a2, 2, sum, na.rm = TRUE ) 
 
-
-
-AIC.table <- matrix( c( delta.AIC, wi.array ), nrow = length(delta.AIC), ncol = 2 )
-dimnames(AIC.table) <- list( good.fits, c( paste("delta.", fit.stat, sep=""), paste( fit.stat, ".weight", sep="")))
+AIC.table <- matrix( c( all.fit.stat, delta.AIC, wi.array[,1] ), nrow = length(delta.AIC), ncol = 3 )
+dimnames(AIC.table) <- list( good.fits, c( fit.stat, paste("delta.", fit.stat, sep=""), paste( fit.stat, ".weight", sep="")))
 AIC.table <- AIC.table[ order(AIC.table[,1]), ]
 
 
@@ -100,6 +96,10 @@ if( substring(what,1,1) == "s" ){
 		se.s.hat.conditional = matrix( se.conditional.theta.average, nan, ns ),
 		mod.selection.proportion = matrix( (se.theta.average - se.conditional.theta.average) / se.theta.average, nan, ns )
 		)
+    a1$s.hat <- a1$s.hat[ , -ns ]
+    a1$se.s.hat <- a1$se.s.hat[ , -ns ]
+    a1$se.s.hat.conditional <- a1$se.s.hat.conditional[ , -ns ]
+    a1$mod.selection.proportion <- a1$mod.selection.proportion[ , -ns ]
 } else if( substring(what, 1,1) == "c" ){
 	a1 <- list( fit.table = AIC.table, 
 		p.hat = matrix( theta.average, nan, ns ), 
@@ -107,6 +107,10 @@ if( substring(what,1,1) == "s" ){
 		se.p.hat.conditional = matrix( se.conditional.theta.average, nan, ns ),
 		mod.selection.proportion = matrix( (se.theta.average - se.conditional.theta.average) / se.theta.average, nan, ns )
 		)
+    a1$p.hat <- a1$p.hat[ , -1 ]
+    a1$se.p.hat <- a1$se.p.hat[ , -1 ]
+    a1$se.p.hat.conditional <- a1$se.p.hat.conditional[ , -1 ]
+    a1$mod.selection.proportion <- a1$mod.selection.proportion[ , -1 ]
 } else if( substring(what, 1,1) == "n" ){
 	a1 <- list( fit.table = AIC.table, 
 		n.hat =  theta.average, 
@@ -114,14 +118,14 @@ if( substring(what,1,1) == "s" ){
 		se.n.hat.conditional = se.conditional.theta.average, 
 		mod.selection.proportion = (se.theta.average - se.conditional.theta.average) / se.theta.average
 		)
-} else if( substring(what, 1,1) == "b" ){
-	a1 <- list( fit.table = AIC.table, 
-		parameters =  theta.average, 
-		se.param = se.theta.average, 
-		se.param.conditional = se.conditional.theta.average, 
-		mod.selection.proportion = (se.theta.average - se.conditional.theta.average) / se.theta.average
-		)
-}
+    a1$n.hat[1] <- NA
+    a1$se.n.hat[1] <- NA
+    a1$se.n.hat.conditional[1] <- NA
+    a1$mod.selection.proportion[1] <- NA
+    a1$n.hat.lower <- a1$n.hat - 1.96*a1$se.n.hat
+    a1$n.hat.upper <- a1$n.hat + 1.96*a1$se.n.hat
+
+} 
 
 	
 a1 

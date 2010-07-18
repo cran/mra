@@ -70,8 +70,14 @@
 !        'real(dp)' and 'real(kind=dbl)' to 'double precison'.  
 !        'integer(i4b)' to 'integer'
 !   To convert back, global search and replace in reverse.
-
+!
 !   tlm - 6-nov-09 and 30-jan-10
+!
+!   Eric Reghr was doing simulations with p's and phi's close to 1.  The logit link was 
+!   having issues with the asymptote there.  He asked that I implement the sine link.
+!   so I did.  But, I called it the cosine link. 
+!
+!   tlm 21-feb-2010 (while in Kruger NP, South Africa)
 
 
 
@@ -254,6 +260,7 @@ module constants
     ! Numerical recipies DP set in module NRTYPE
     !integer, parameter :: dbl = DP              ! this needed for my routines
                                                 ! DP and dbl MUST be equal here
+                                                !   NOT NEEDED WHEN SWITCHED TO 'double precision'
 
 
     double precision :: SVD_ZERO = 0.5E-6  ! This is the value that determines when a singular value is zero.  I.e., when a
@@ -299,6 +306,10 @@ module constants
     integer, parameter :: chat_rot = 5 ! C-hat rule of thumb. If all cells in a Test 2 or Test 3 Chi-square table are greater or equal this, use it in computation of c-hat
 
     integer, parameter :: HL_nbins = 10 !number of bins for Hos-Lem statistic
+
+    double precision, parameter :: pi_mult = 100.0D0   ! Applies to sine link only.  Change this to give sine link more range. 
+                                                       ! Sine link is 0 when x less than this number.  Sine link is 1 when x greater than this number.
+
 end module
 
 ! ---------------------------------------------------------------------------
@@ -340,6 +351,14 @@ module globevars
                       ! Intermediate printing from within VA09AD is surpressed if trace > maxit+1.
                       ! Values of X and G are surpressed from within VA09AD if trace < 0 (only final results printed).
                       
+    integer :: link   ! The link function to use. The link is specified in R, before calling this. 
+                      ! Valid values are:
+                      !     1 = logistic
+                      !     2 = cosine
+                      !     3 = hazard
+                      ! Error checking for valid values should be done in R before calling this routine.
+                      ! If you ever get around to coding the inverse normal distribution, you could add probit. 
+                                            
 
 end module
 
@@ -373,6 +392,7 @@ subroutine cjsmod( nan, &
         algorithm, &
         cov_meth, &
         input_trace, &
+        input_link, &
         nhat_v_meth, &
         capX, &
         survX, &
@@ -437,6 +457,7 @@ subroutine cjsmod( nan, &
 !    qaic = qaic
 !    c.hat = variance inflation factor
 !    chisq_vif = chisquare statistic used to compute the vif
+!    input_link = integer value specifying the link function, from the user, "input" to this routine
 !    df_vif = degrees of freedom for vif
 !    parameters = vector of parameters
 !    se_param = vector of standard errors
@@ -463,7 +484,7 @@ subroutine cjsmod( nan, &
 
 !    Input parameters
     integer, intent(inout), target :: nan, ns, nx, ny
-    integer, intent(inout) :: ng, algorithm, cov_meth, input_trace, max_obs_fn
+    integer, intent(inout) :: ng, algorithm, cov_meth, input_trace, max_obs_fn, input_link
     integer, intent(inout), dimension(nan,ns), target :: hist
     integer, intent(inout), dimension(nan) :: group
     double precision, intent(inout), dimension(nan,ns,nx), target :: capX
@@ -517,6 +538,7 @@ subroutine cjsmod( nan, &
 
 !    ---- Set maximization parameters in globevars
     trace = input_trace
+    link = input_link
     
 !    ---- Total number of parameters
     np = nx + ny
@@ -689,6 +711,7 @@ subroutine hugginsmodel( &
         p_init, &
         c_init, &
         input_trace, &
+        input_link, &
         maxfn, &
         beta_tol_vec, &
         loglik, &
@@ -736,7 +759,7 @@ subroutine hugginsmodel( &
 
 !    Input parameters
     integer, intent(inout), target :: nan, ns, nx, ny
-    integer, intent(inout) :: algorithm, cov_meth, input_trace, maxfn
+    integer, intent(inout) :: algorithm, cov_meth, input_trace, maxfn, input_link
     integer, intent(inout), dimension(nan,ns), target :: hist
     integer, intent(inout), dimension(nx), target :: remove   ! = 1 to remove a capture covar from recapture equation
     double precision, intent(inout), dimension(nan,ns,nx), target :: capX  ! initial capture covars
@@ -765,6 +788,7 @@ subroutine hugginsmodel( &
 
 !    ---- Set maximization parameters in globevars
     trace = input_trace
+    link = input_link
 
 !    ---- Open a log file, if called for by the user
     if (trace /= 0) then 
@@ -1463,7 +1487,7 @@ SUBROUTINE CJS_gradient(p, beta, f, grad)
     double precision, intent(inout) :: f
 
     double precision, external :: CJS_loglik
-    double precision :: f1, f2, deltai, tmp_b, tmp_g
+    double precision :: f1, f2, deltai, tmp_b
     double precision, dimension(p) :: beta2
     integer :: i
 
@@ -1481,23 +1505,21 @@ SUBROUTINE CJS_gradient(p, beta, f, grad)
         if (central_diffs) then
             beta2(i) = tmp_b - deltai
             f2 = -1.0D0 * CJS_loglik(p, beta2)
-                    grad(i)=(f1-f2)/(2.0D0 * deltai)
-            tmp_g = (f1-f)/deltai  ! for debug printing only
+            grad(i)=(f1-f2)/(2.0D0 * deltai)
         else
             grad(i)=(f1-f)/deltai
-            tmp_g = 0.0D0
         end if
 
         beta2(i) = tmp_b
 
-           end do
+    end do
 
     if(trace >= 3) then
         write(logfile,*) "Gradient vector:"
-        write(logfile,*) "    i         coef     Gradient    1-sided G"
-        write(logfile,*) "----- ------------ ------------ ------------"
+        write(logfile,*) "    i         coef     Gradient"
+        write(logfile,*) "----- ------------ ------------"
         write(logfile,10) (i, beta2(i), grad(i), i=1,p)
-        10 format(1x,i5,1x,3F12.7)
+        10 format(1x,i5,1x,2F12.7)
     end if
 
 
@@ -1747,7 +1769,8 @@ subroutine procap(pij, i, j, coef, nx)
     double precision, intent(in), dimension(nx) :: coef
     double precision, intent(out) :: pij
 
-    double precision :: sum, z
+    double precision, external :: logit_link, sine_link, hazard_link
+    double precision :: sum
     integer :: k
 
     sum = 0.0D0
@@ -1757,17 +1780,23 @@ subroutine procap(pij, i, j, coef, nx)
         sum = sum + coef(k)*ptr_capX(i,j,k)
     end do
 
-    ! Careful, these two statements set boundaries where gradients fail (not differentiable)
-    ! With double precision, we should have at least 13 digits of accuracy.  See module
-    ! constants
-    sum=min(sum,max_e_able)
-    sum=max(sum,-max_e_able)
+    !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
+    if( link == 1 ) then
+        pij = logit_link( sum )
+        
+    else if (link == 2) then
+        pij = sine_link( sum )
+        
+    else if (link == 3) then
+        pij = hazard_link( sum )
+        
+    else  ! unknown link function.  This will not bomb gracefully.
+        pij = -1.
+    end if
+    
 
-    z = exp( sum )
-    pij = z / (1.0D0 + z)
-
-!    if( i == 1 ) then
-!        write(logfile,*) "  Cap", i, j, ":", (ptr_capX(i,j,k), k=1,nx), "p=", pij
+!    if( i <= 2 ) then
+!        write(logfile,*) "  Cap", i, j, ":", (coef(k), "*", ptr_capX(i,j,k), " + ", k=1,nx), "p=", pij
 !    end if
 
 end subroutine
@@ -1801,6 +1830,7 @@ subroutine prorecap(cij, i, j, coef, nx, ny, remove)
     double precision, intent(out) :: cij
     integer, intent(in), dimension(nx) :: remove
 
+    double precision, external :: logit_link, sine_link, hazard_link
     double precision :: sum, z
     integer :: k
 
@@ -1818,14 +1848,20 @@ subroutine prorecap(cij, i, j, coef, nx, ny, remove)
         end if
     end do
 
-    ! Careful, these two statements set boundaries where gradients fail (not differentiable)
-    ! With double precision, we should have at least 13 digits of accuracy.  See module
-    ! constants
-    sum=min(sum,max_e_able)
-    sum=max(sum,-max_e_able)
+    !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
+    if( link == 1 ) then
+        cij = logit_link( sum )
+        
+    else if (link == 2) then
+        cij = sine_link( sum )
+        
+    else if (link == 3) then
+        cij = hazard_link( sum )
+        
+    else  ! unknown link function.  This will not bomb gracefully.
+        cij = -1.
+    end if
 
-    z = exp( sum )
-    cij = z / (1.0D0 + z)
 
 !    if (i==1) then
 !        write(logfile,*) "Recap", i, j, ":", (ptr_capY(i,j,k), k=1,ny), "p=", cij
@@ -1859,6 +1895,7 @@ subroutine prosur(sij, i, j, coef, ny)
     double precision, intent(in), dimension(ny) :: coef
     double precision, intent(out) :: sij
 
+    double precision, external :: logit_link, sine_link, hazard_link
     double precision :: sum, z
     integer :: k
 
@@ -1868,14 +1905,19 @@ subroutine prosur(sij, i, j, coef, ny)
         sum = sum + coef(k)*ptr_survX(i,j,k)
     end do
 
-    ! Careful, these two statements set boundaries where gradients fail (not differentiable)
-    ! With double precision, we should have at least 13 digits of accuracy.  See module
-    ! constants
-    sum=min(sum,max_e_able)
-    sum=max(sum,-max_e_able)
-
-    z = exp( sum )
-    sij = z / (1.0D0 + z)
+    !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
+    if( link == 1 ) then
+        sij = logit_link( sum )
+        
+    else if (link == 2) then
+        sij = sine_link( sum )
+        
+    else if (link == 3) then
+        sij = hazard_link( sum )
+        
+    else  ! unknown link function.  This will not bomb gracefully.
+        sij = -1.
+    end if
 
     ! Account for the time interval here.  This is only place in whole program where
     ! we use the interval information.
@@ -1883,6 +1925,75 @@ subroutine prosur(sij, i, j, coef, ny)
 
 end subroutine
 
+!-------------------------------------------
+
+real function logit_link( eta )
+!
+!   Compute the inverse of the logistic link. 
+!   eta is the linear predictor
+!
+    use constants
+    implicit none
+    
+    double precision :: logit_link
+    double precision :: eta
+    double precision :: z
+
+    ! Careful, these two statements set boundaries where gradients fail (not differentiable)
+    ! With double precision, we should have at least 13 digits of accuracy.  See module
+    ! constants
+    z=min(eta,max_e_able)
+    z=max(z,-max_e_able)
+
+    z = exp( z )
+    logit_link = z / (1.0D0 + z)
+
+end function
+
+!-------------------------------------------
+
+real function sine_link( eta )
+!
+!   Compute the inverse of the cosine link. 
+!   eta is the linear predictor
+!
+    use nrtype ! for PI_D constant = value of pie.
+    use constants
+    implicit none
+    
+    double precision :: sine_link
+    double precision :: eta
+    
+    if( eta < -pi_mult ) then
+        sine_link = 0.0D0
+    else if( eta > pi_mult ) then
+        sine_link = 1.0D0
+    else 
+        sine_link = 0.5D0 + 0.5D0 * sin( (eta * PI_D) / (2.0D0 * pi_mult) ) 
+    end if
+
+end function
+
+!-------------------------------------------
+
+real function hazard_link( eta )
+!
+!   Compute the inverse of the hazard link. 
+!   eta is the linear predictor
+!
+    use constants 
+    implicit none
+    
+    double precision :: hazard_link
+    double precision :: eta
+    double precision :: z
+
+    z=min(eta,max_e_able)
+    z=max(z,-max_e_able)
+
+    hazard_link = 1.0D0 - exp( -exp( z/20.0D0 ))
+
+end function
 
 !-------------------------------------------
 
@@ -2592,7 +2703,7 @@ subroutine CJS_probs_and_vars(nan,ns,np,parameters,covariance,p_hat,s_hat, se_p_
     double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat, se_p_hat, se_s_hat
 
     integer :: i,j,k,l
-    double precision :: sum, x1, x2
+    double precision :: sum, x1, x2, x
     double precision, dimension(ptr_nx) :: cap_beta
     double precision, dimension(ptr_ny) :: surv_beta
 
@@ -2604,22 +2715,21 @@ subroutine CJS_probs_and_vars(nan,ns,np,parameters,covariance,p_hat,s_hat, se_p_
     ! Capture probability first
     do i = 1,nan
         do j = 1,ns
-            call procap(p_hat(i,j), i, j, cap_beta, ptr_nx)
+            !call procap(p_hat(i,j), i, j, cap_beta, ptr_nx)
 
+            x = 0.0
             SUM=0.0
             DO K=1,ptr_nx
                 x1 = ptr_capX(i,j,k)
+                x  = x + cap_beta(k)*x1  ! this is eta = linear predictor
                 DO L=1,ptr_nx
                     x2 = ptr_capX(i,j,L)
-                     SUM=SUM + (X1 * X2 * covariance(K,L))
+                    SUM=SUM + (X1 * X2 * covariance(K,L))
                 end do
             end do
 
-            IF (SUM > 0.0) THEN
-                se_p_hat(i,j) = p_hat(i,j) * (1.0-p_hat(i,j)) * SQRT(SUM)
-            ELSE
-                se_p_hat(i,j) = 0.0
-            END IF
+            call ilink_n_se( x, SUM, p_hat(i,j), se_p_hat(i,j) )
+                            
         end do
     end do
 
@@ -2627,22 +2737,19 @@ subroutine CJS_probs_and_vars(nan,ns,np,parameters,covariance,p_hat,s_hat, se_p_
     do i = 1,nan
         do j = 1,ns
 
-            call prosur(s_hat(i,j), i, j, surv_beta, ptr_ny)
-
+            x = 0.0
             SUM=0.0
             DO K=1,ptr_ny
                 x1 = ptr_survX(i,j,k)
+                x  = x + surv_beta(k)*x1  ! this is eta = linear predictor
                 DO L=1, ptr_ny
                     x2 = ptr_survX(i,j,L)
-                     SUM=SUM + (X1 * X2 * covariance(k+ptr_nx,L+ptr_nx))
+                    SUM=SUM + (X1 * X2 * covariance(k+ptr_nx,L+ptr_nx))
                 end do
             end do
 
-            IF (SUM > 0.0) THEN
-                se_s_hat(i,j) = s_hat(i,j) * (1.0-s_hat(i,j)) * SQRT(SUM)
-            ELSE
-                se_s_hat(i,j) = 0.0
-            END IF
+            call ilink_n_se( x, SUM, s_hat(i,j), se_s_hat(i,j) )
+
         end do
     end do
 
@@ -2760,33 +2867,27 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
     double precision, intent(inout), dimension(nan,ns) :: p_hat, c_hat, se_p_hat, se_c_hat
 
     integer :: i,j,k,l
-    double precision :: sum, x1, x2
-    !double precision, dimension(ptr_nx) :: p_beta
-    !double precision, dimension(ptr_ny) :: c_beta
-
-    !p_beta = parameters(1:nx)
-    !c_beta = parameters( (nx+1):np )
+    double precision :: sum, x1, x2, x
 
 
     ! Initial capture probability first
     do i = 1,nan
         do j = 1,ns
-            call procap(p_hat(i,j), i, j, parameters, nx)
+            !call procap(p_hat(i,j), i, j, parameters, nx)
 
+            x = 0.0
             SUM=0.0
             DO K=1,nx
                 x1 = ptr_capX(i,j,k)
+                x = x + parameters(k)*x1
                 DO L=1,nx
                     x2 = ptr_capX(i,j,L)
                     SUM = SUM + (X1 * X2 * covariance(K,L))
                 end do
             end do
 
-            IF (SUM > 0.0) THEN
-                se_p_hat(i,j) = p_hat(i,j) * (1.0-p_hat(i,j)) * SQRT(SUM)
-            ELSE
-                se_p_hat(i,j) = 0.0
-            END IF
+            call ilink_n_se( x, SUM, p_hat(i,j), se_p_hat(i,j) )
+
         end do
     end do
 
@@ -2794,8 +2895,9 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
     do i = 1,nan
         do j = 1,ns
 
-            call prorecap(c_hat(i,j), i, j, parameters, nx, ny, ptr_remove)
+            !call prorecap(c_hat(i,j), i, j, parameters, nx, ny, ptr_remove)
 
+            x = 0.0
             SUM=0.0
             DO K=1,nx+ny
 
@@ -2806,6 +2908,8 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
                     x1 = ptr_capY(i,j,k-nx)
                 end if
 
+                x = x + parameters(k)*x1
+ 
                 DO L=1, nx+ny
 
                     if (L <= nx) then
@@ -2819,11 +2923,8 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
                 end do
             end do
 
-            IF (SUM > 0.0) THEN
-                se_c_hat(i,j) = c_hat(i,j) * (1.0-c_hat(i,j)) * SQRT(SUM)
-            ELSE
-                se_c_hat(i,j) = 0.0
-            END IF
+            call ilink_n_se( x, SUM, c_hat(i,j), se_c_hat(i,j) )
+
         end do
     end do
 
@@ -2833,6 +2934,48 @@ end subroutine
 
 ! ----------------------------------------------------------------------------------------------
 
+subroutine ilink_n_se( xbeta, x_vbeta_x, prob, se_prob )
+!
+!   Invert the link function, and compute variance of inverse link
+!
+!   xbeta = linear predictor
+!   x_vbeta_x = x' V(beta) x quadratic form. assumed 1x1 scaler
+!   prob = output probability = answer resulting from inverting link
+!   se_prob = output standard error of probability
+!
+    use nrtype
+    use globevars
+    implicit none
+    
+    double precision, intent(in) :: xbeta, x_vbeta_x
+    double precision, intent(out) :: prob, se_prob
+    double precision, external :: logit_link, sine_link, hazard_link
+    
+    double precision :: sq_xvx
+
+    sq_xvx = sqrt( max( 0.0D0, x_vbeta_x ) )
+    
+    if( link == 1 ) then
+        prob = logit_link( xbeta )
+        se_prob = prob * (1.0D0 - prob) * sq_xvx
+    else if( link == 2 ) then
+        prob = sine_link( xbeta )
+        if( xbeta < -pi_mult .or. xbeta > pi_mult ) then
+            se_prob = 0.0D0
+        else
+            se_prob = sq_xvx * PI_D * cos( xbeta * PI_D / (2.0D0 * pi_mult) ) / (4*pi_mult)
+        end if
+    else if( link == 3 ) then
+        prob = hazard_link( xbeta )
+        se_prob = prob * exp(xbeta) * sq_xvx
+    else 
+        prob = -1.
+        se_prob = -1.
+    end if
+    
+end subroutine
+
+! ----------------------------------------------------------------------------------------------
 
 subroutine huggins_n_hat(nan,ns,np,nx,beta,covariance,p_hat,nhat_v_meth, n_hat,se_n_hat,lci,uci)
 !

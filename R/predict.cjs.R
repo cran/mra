@@ -12,11 +12,13 @@ f.active <- function( hist ){
 	# (i.e., the history is stopped at the 2). 
 	ns <- length(hist)
 	active <- rep( FALSE, ns )
-	first <- min( (1:ns)[hist >= 1] )
-	if( first < ns ){
-		last <- min( ns, (1:ns)[hist == 2] )   # if there are 2 2's, use the first one. 
-		active[ (first+1):last ] <- TRUE
-	}
+    if( any( hist >= 1 ) ){   # had to add this because all zero rows are allowed
+    	first <- min( (1:ns)[hist >= 1] )
+    	if( first < ns ){
+    		last <- min( ns, (1:ns)[hist == 2] )   # if there are 2 2's, use the first one. 
+    		active[ (first+1):last ] <- TRUE
+    	}
+    }
 	active
 }
 f.cumprod <- function( x ){

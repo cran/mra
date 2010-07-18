@@ -1,13 +1,16 @@
 Package: mra
 Type: Package
 Title: Analysis of Mark-Recapture data
-Version: 2.4
-Date: 2010-01-04
+Version: 2.6
+Date: 2010-07-18
 Author: Trent McDonald
 Maintainer: Trent McDonald <tmcdonald@west-inc.com>
-Description: Analysis of mark-recapture data using covariates. Models
-        implemented: CJS open population; Huggin's closed population.
+Description: Analysis of mark-recapture data using covariates. Models:
+        CJS open population; Huggin's closed population. Link
+        functions: logit, sine, hazard.  Model selection and model
+        averaging routines. Plot methods. CJS methods produce estimates
+        of population size using the Horvitz-Thompson estimator.
 License: GNU General Public License
-Packaged: 2010-02-05 06:27:14 UTC; Trent
+Packaged: 2010-07-20 08:40:26 UTC; Trent
 Repository: CRAN
-Date/Publication: 2010-02-05 10:04:34
+Date/Publication: 2010-07-24 20:21:31
