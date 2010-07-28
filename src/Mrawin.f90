@@ -1313,7 +1313,7 @@ end subroutine
 
 
 ! ------------------------------------------------------------------------------------
-real function CJS_loglik(p, beta)
+double precision function CJS_loglik(p, beta)
 !double precision function CJS_loglik(p, beta)  THIS DOES NOT WORK IN GFORTRAN, but worked in G95 and Lahey
 !
 !         Purpose: to compute the log-likelihood, given parameters
@@ -1341,7 +1341,7 @@ real function CJS_loglik(p, beta)
     use globevars
     implicit none
 
-    double precision :: CJS_loglik
+    !double precision :: CJS_loglik
     integer, intent(inout) :: p
     double precision, intent(inout), dimension(p) :: beta
 
@@ -1576,7 +1576,7 @@ end subroutine
 
 
 ! ------------------------------------------------------------------------------------
-real function Huggins_loglik(p, beta)
+double precision function Huggins_loglik(p, beta)
 !
 !         Purpose: to compute the Huggins model log-likelihood, given parameters
 !
@@ -1600,7 +1600,7 @@ real function Huggins_loglik(p, beta)
     use globevars
     implicit none
 
-    double precision :: Huggins_loglik
+    !double precision :: Huggins_loglik
     integer, intent(inout) :: p    ! number of parameters
     double precision, intent(inout), dimension(p) :: beta    ! parameters
 
@@ -1927,7 +1927,7 @@ end subroutine
 
 !-------------------------------------------
 
-real function logit_link( eta )
+double precision function logit_link( eta )
 !
 !   Compute the inverse of the logistic link. 
 !   eta is the linear predictor
@@ -1935,7 +1935,7 @@ real function logit_link( eta )
     use constants
     implicit none
     
-    double precision :: logit_link
+    !double precision :: logit_link
     double precision :: eta
     double precision :: z
 
@@ -1952,7 +1952,7 @@ end function
 
 !-------------------------------------------
 
-real function sine_link( eta )
+double precision function sine_link( eta )
 !
 !   Compute the inverse of the cosine link. 
 !   eta is the linear predictor
@@ -1961,7 +1961,7 @@ real function sine_link( eta )
     use constants
     implicit none
     
-    double precision :: sine_link
+    !double precision :: sine_link
     double precision :: eta
     
     if( eta < -pi_mult ) then
@@ -1976,7 +1976,7 @@ end function
 
 !-------------------------------------------
 
-real function hazard_link( eta )
+double precision function hazard_link( eta )
 !
 !   Compute the inverse of the hazard link. 
 !   eta is the linear predictor
@@ -1984,7 +1984,7 @@ real function hazard_link( eta )
     use constants 
     implicit none
     
-    double precision :: hazard_link
+    !double precision :: hazard_link
     double precision :: eta
     double precision :: z
 
@@ -2289,14 +2289,14 @@ end subroutine
 
 ! ---------------------------------------------------------------------------------
 
-real FUNCTION FD05AD(INUM)
+double precision FUNCTION FD05AD(INUM)
 !
 !    Purpose: return a real constant for IEEE double precision arithmetic.
 !    Code from H.S.L. subroutine ZE02AM, modified by TLM where needed.
     use constants
     implicit none
 
-    double precision :: FD05AD
+    !double precision :: FD05AD
     integer, intent(in) :: INUM
 
     double precision, save, dimension(5) :: DC
@@ -3820,7 +3820,7 @@ end subroutine
 
 ! ----------------------------------------------------------------------------------------------
 
-real function phat_cov(nan, ns, np, p, cov, j, i1, i2)
+double precision function phat_cov(nan, ns, np, p, cov, j, i1, i2)
 !
 !    compute the covariance between p(i1,j) and p(i2,j), where p is a probability computed
 !    using the logisitic link.
@@ -3840,7 +3840,7 @@ real function phat_cov(nan, ns, np, p, cov, j, i1, i2)
     use globevars
     implicit none
 
-    double precision :: phat_cov
+    !double precision :: phat_cov
     integer, intent(inout) :: nan, np, ns, j, i1, i2
 
     double precision, intent(inout), dimension(np, np) :: cov

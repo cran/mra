@@ -122,6 +122,8 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000, birth.rate = "constant.popln", 
 
 \examples{
 
+\donttest{  # dont test because it takes too long.  Code works, however.
+
 ## Simulate constant model, and analyze
 
 ns <- 10
@@ -190,7 +192,7 @@ mean.N <- colMeans(results, na.rm=TRUE)
 plot( 1:length(mean.N), mean.N, ylim=range(c(mean.N,N),na.rm=TRUE), xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
 abline( h=N )
 title(main="Time varying CJS model")
-
+}
 
 }
 
