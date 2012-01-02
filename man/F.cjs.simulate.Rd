@@ -6,95 +6,105 @@ F.cjs.simulate - Generation of capture histories that follow a CJS model.
 }
 
 \description{
-This function will generate a large number of capture history matrices that 
-exactly follow an open Cormack-Jolly-Seber (CJS) model.  A super-population 
+This function generates capture history matrices that 
+follow open Cormack-Jolly-Seber (CJS) models.  A super-population 
 approach is taken wherein individuals with unique capture and survival 
-probabilites that follow a specified model are randomly 'born' into the 
+probabilites are randomly 'born' into the 
 realized population and captured. Any CJS model, including those with 
 heterogeneity, can be 
-simulated using this approach.  
+simulated.  Closed populations can also be simulated.   
 }
 
 \usage{
-F.cjs.simulate(super.p, super.s, fit, N1 = 1000, birth.rate = "constant.popln", R = 100)
+F.cjs.simulate(super.p, super.s, fit, N1 = 1000, births.per.indiv = "constant.popln", R = 100)
 }
 
 \arguments{
   \item{super.p}{A matrix or vector of true capture probabilities in the super-population of individuals.
-         If \code{super.p} is a vector, all individuals in the realized population will have the 
-         same true capture probabilities, specified in \code{super.p}.  If \code{super.p} is a 
-         vector, it is assumed that \code{length(super.p)} capture occasions will 
-         be simulated.  If \code{super.p} is a matrix, the rows of \code{super.p} will be 
-         randomly selected and used for the capture probabilities of individuals in the 
-         realized population. That is, when animals are 'born' into the population, 
-         a random row from \code{super.p} is picked and associated with the newly 
-         'born' animal as it's vector of capture probabilities, when it survives. 
-         If \code{super.p} is a matrix, it is assumed that \code{ncol(super.p)} 
-         capture occasions will be simulated.  Number of rows in \code{super.p} can be anything
-         greater than or equal to 1, and does not need to match number of rows in \code{super.s}. }
+         \itemize{
+            \item If \code{super.p} is a VECTOR, all individuals in the realized population will have the 
+                same true capture probabilities, but capture probabilities can vary by occasion.  In this case, 
+                \code{length(super.p)} capture occasions will be simulated.  
+            \item If \code{super.p} is a MATRIX, the rows of \code{super.p} will be 
+                 randomly selected and used for the capture probabilities of individuals 
+                 when they are 'born' into the population.  
+                 Number of rows in \code{super.p} must be 
+                 greater than or equal to 1, and does not need to match number of rows in \code{super.s}.
+                 When \code{super.p} is a matrix, \code{ncol(super.p)} capture occasions will be simulated.  
+            }
+         }
 
   \item{super.s}{A matrix or vector of true survival probabilities in the super-population of individuals.
-         If \code{super.s} is a vector, all individuals in the realized population will have the 
-         same true survival probabilities, specified in \code{super.s}.  If \code{super.p} is a matrix, 
-         the rows of \code{super.p} will be 
-         randomly selected and used as survival probabilities for individuals in the 
-         realized population. That is, when animals are 'born' into the population, 
-         a random row of \code{super.s} will be picked and associated with the newly 
-         'born' animal as it's vector of survival probabilities.  The number of 
-         capture occasions to simulate is set by the length or number of columns of \code{super.p}
-         (see above).  Assuming number of occasions to simulate is NS, \code{super.s} must either 
-         be of length \eqn{NS - 1} (if a vector) or have \eqn{NS - 1} columns (if a matrix).
-         Number of columns in \code{super.s} is one less than NS because 
-         survival probabilities apply between capture occasions. The vector
-         \code{super.s[,j]} is the set of survival probabilities for animals alive just after 
-         occasion \code{j} until just before occasion \code{j+1}. Number of rows in \code{super.s} can be anything
-         greater than or equal to 1, and does not need to match number of rows in \code{super.p}.}
+         \itemize{
+            \item If \code{super.s} is a VECTOR, all individuals in the realized population will have the 
+                 same true survival probabilities after they are 'born' into the realized population.  
+                 If the number of occasions to simulate is NS (see \code{super.p} above),
+                 \code{super.s} must be of length \eqn{NS - 1}.
+            \item If \code{super.p} is a MATRIX, the rows of \code{super.p} will be 
+                 randomly selected and used as survival probabilities for individuals when they 
+                 are 'born' into the population.  If the number of occasions to simulate 
+                 is NS, \code{super.s} must have \eqn{NS - 1} columns. The vector
+                 \code{super.s[,j]} is the set of true survival probabilities for animals alive just after 
+                 occasion \code{j} until just before occasion \code{j+1}. Number of rows in \code{super.s} must be 
+                 greater than or equal to 1, and does not need to match number of rows in \code{super.p}.
+         }
+         Number of survival probabilities in \code{super.s} is one less than NS because 
+         survival probabilities apply between capture occasions. }
 
-  \item{fit}{A previously estimated CJS object.  Instead of specifying \code{super.p} and \code{super.s} above,
+  \item{fit}{A previously estimated CJS object.  Instead of specifying \code{super.p} and \code{super.s},
         a fitted CJS model can be specified.  If either one of \code{super.p} or \code{super.s} is missing, 
-        the estimated capture probabilities (\code{fit$p.hat}) and survival probabilities (\code{fit$s.hat}) will 
-        be used as \code{super.p} and \code{super.s}, respectively.  Because capture probabilities for the 
-        first occasion are not estimable by CJS models (unless you extrapolate using covariates), capture 
+        the (estimated) probabilities in \code{fit} will be used for their respective place.  That is, 
+        if \code{super.p} is missing, \code{fit} must be present and \code{fit$p.hat} will be used for the 
+        matrix of true capture probabilities. If \code{super.p} is missing, \code{fit} must be present and 
+        \code{fit$s.hat} will be used for the 
+        matrix of true survival probabilities. Because capture probabilities for the 
+        first occasion are not usually estimable by CJS models, capture 
         probabilities for the first occasion are set equal to 1.0.  All members of the realized population 
         will be observed on the first occasion in this case. }
         
   \item{N1}{A scalar specifying the initial population size.  I.e., \code{N1} individuals will be 
         'born' into the realized population just before the first sampling occasion.}
   
-  \item{birth.rate}{Either a vector of birth rates, or the string "constant.popln" (the default).  If 
-        \code{birth.rate} = "constant.popln", the number of births between each capture occasion 
-        will equal the number of deaths between each occasion.  In this way,  
-        true population size will be (exactly) constant through time.  If \code{birth.rate} is 
-        a vector of length \eqn{NS - 1}, then round( \eqn{N_j}{N(j)}*\code{birth.rate[,j]} ) births 
+  \item{births.per.indiv}{Either a vector of births per individual in the realized population, or 
+        the string "constant.popln" (the default).  If 
+        \code{births.per.indiv} = "constant.popln", the total number of births into the realized population between capture occasions 
+        will equal the number of deaths between occasions.  In this case,  
+        true realized population size will be (exactly) constant through time.  If \code{births.per.indiv} is 
+        a vector of length \eqn{NS - 1}, then round( \eqn{N_j}{N(j)}*\code{births.per.indiv[,j]} ) births 
         will occur between occasions \code{j} and \code{j+1}, where \eqn{N_j}{N(j)} is the true number of 
-        individuals in the population at occasion \code{j}.  Values in \code{birth.rate} can 
-        be any non-negative number.  All animals in the population have one offspring  
-        between occasions if \code{birth.rate = rep(1,NS)}}.  
+        individuals in the realized population at occasion \code{j}.  Values in \code{birth.rate} must  
+        be 0 or greater.  As an example, all animals in the realized population have one offspring  
+        between occasions if \code{births.per.indiv = rep(1,NS)}.  Assuming a sex ratio of 50\%, all females 
+        alive in the population between occasions have one offspring if \code{births.per.indiv} = 0.5. All females 
+        in the population have two offspring if \code{births.per.indiv} = 1.}
   
   \item{R}{A scalar specifying the number of replications for the simulation. A total of \code{R} 
         independent capture history matricies will be generated. }
 }
 
-\details{Some examples: A two-group heterogeneity model has one group of individuals that have one common
-        set of capture probability, and another group of individuals that have another set of common 
-        capture probabilities.  A closed (no births or deaths) two-group heterogeneity model with 10 
-        occasions can be simulated 
-        using 
-        \itemize{ \item F.cjs.simulate( rbind( rep(0.25,10),rep(0.75,10) ), rep(1,9) ). }
-        One group of individuals will have probability of capture equal to 0.25, the other group will 
-        have probability of capture equal to 0.75, and there will be approximately the same number of 
-        individuals in both groups. Unequal groups can be simulated using        
+\details{Some examples: A two-group heterogeneous population contains one group of individuals with one common
+        set of capture probabilities, and another group of individuals with another set of common 
+        capture probabilities.  A population with one group of individuals having capture probability equal 
+        to 0.25, and another group with capture probability equal to 0.75 can be simulated using 
+        \itemize{ \item F.cjs.simulate( rbind( rep(0.25,10),rep(0.75,10) ), rep(s,9) ). },
+        where \code{s} is some survival probability between 0 and 1. If \code{s} = 1, a 
+        closed (no births or deaths) two-group heterogeneity model is simulated.  In this example, the 
+        realized population is sampled for 10 occasions. 
+        
+        Non-equal sized hetergeneity groups can be simulated using        
         \itemize{ \item F.cjs.simulate( rbind( matrix(0.25,1,10),matrix(0.75,9,10) ), rep(1,9) ). }
-        Using this call, approximatley 10\% of the individuals will have capture probabilities 
+        Using this call, approximatley 10\% of individuals in the realized population will have capture probabilities 
         equal to 0.25, while 90\% will have capture probabilities equal to 0.75. Additional 
-        groups can be included by including more rows with distinct probabilities for \code{super.p}.
+        groups can be included by including more rows with distinct probabilities in \code{super.p}.
         
         A population with capture heterogeneity proportional to a vector \code{w} can be simulated using 
-        \itemize{ \item F.cjs.simulate( matrix( w/sum(x), 100, 10), rep(1,9) ) }.  
+        \itemize{ \item F.cjs.simulate( matrix( w/sum(x), length(w), 10), rep(s,9) ) }.  
     
-        A stocastic population size with constant expected size can be simulated with a statement like 
-        \itemize{ \item F.cjs.simulate( rep(0.25,10), rep(.5,9), birth.rate=rep(1,9) ). }
-        Or, in general, setting survival to Phi and birth rates to (1-Phi)/Phi. 
+        A stocastic population that varies around a specified size of \code{N1} = 1000
+        can be simulated with a statement like 
+        \itemize{ \item F.cjs.simulate( rep(0.25,10), rep(s,9), N1=1000, births.per.indiv=rep((1-s)/s,9) ). }
+        In this simulation, N(j)*(1-s) individuals die between each occasion, but are replaced because the N(j)*s
+        surviving individuals each have (1-s)/s offspring. 
 
         Because of the super-population approach taken here, it is not possible to specify which individuals 
         have which survival or capture probabilities, nor to guarentee that a certain number of individuals 
@@ -104,13 +114,22 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000, birth.rate = "constant.popln", 
 
 
 \value{A list of length \code{R}.  Each component of this list is a list of length 2. 
-        Each of the \code{R} sublists contains the following components:  
+        Each of these \code{R} sublists contains the following components:  
 
     \item{hists}{The simulated capture histories for a particular iteration. This is 
-        a matrix with a random number of rows (due to stocastic nature of captures and 
-        removal of un-observed individuals) and NS columns.}
+        a matrix with a random number of rows (due to the stocastic nature of captures) 
+        and NS columns.}
     \item{popln.n}{A vector of length NS containing the true population sizes at each 
         sampling occasion.}}
+
+%\note{Lists are returned to make it easier to use \code{lapply} and \code{sapply} for 
+%    analysis (see Examples).  If \code{lapply} and \code{sapply} are used to apply an analysis 
+%    to each iteration, it is relatively easy to parallelize code using the \code{snow} package, or 
+%    similar.  Using package \code{snow}, it is possible to have separate processors analyze separate iterations 
+%    of the simulation by simply replacing calls to \code{lapply} with calls to \code{parLapply}.  The 
+%    author has had success with this approach and has realized significant reductions in computation speed when 
+%    running in parallel mode. }
+
 
 \author{Trent McDonald, WEST Inc. (tmcdonald@west-inc.com)}
 
@@ -122,7 +141,8 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000, birth.rate = "constant.popln", 
 
 \examples{
 
-\donttest{  # dont test because it takes too long.  Code works, however.
+\donttest{  
+## Careful: These examples can take a long time to run. 
 
 ## Simulate constant model, and analyze
 

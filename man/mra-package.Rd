@@ -124,6 +124,12 @@ F.3d.model.matrix       Function that expands a formula into the type of 3-D arr
 F.huggins.estim         Estimation of Huggin's closed population model
 F.sat.lik               Returns the saturated likelihood for a CJS model that does 
                         not contain individual covariates
+F.fit.table             Prints table of fit statistics from a list of MRA objects
+F.cjs.simulate          Simulates capture data from MRA CJS model                        
+F.step.cjs              Performs step-wise variables selection for CJS models
+F.cr.model.avg          Performs model averaging from a list of MRA objects
+mra.control             Controls aspects of model fitting (interations, 
+                        tolerance, tracing, etc.)
 dipper.data             European Dipper data set
 lines.cjs               Lines method for cjs objects
 plot.cjs                Plot method for cjs objects
@@ -136,6 +142,8 @@ ivar                    Function for specifying individual varying effects
 tvar                    Function for specifying time varying effects
 }
 }
+
+
 
 \author{
 Trent McDonald

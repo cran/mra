@@ -142,72 +142,11 @@ END MODULE nrtype
 MODULE nrutil
     USE nrtype
     IMPLICIT NONE
-    INTERFACE assert_eq
-        MODULE PROCEDURE assert_eq2,assert_eq3,assert_eq4,assert_eqn
-    END INTERFACE
     INTERFACE outerprod
         MODULE PROCEDURE outerprod_r,outerprod_d
     END INTERFACE
 
      CONTAINS
-
-    FUNCTION assert_eq2(n1,n2,string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    INTEGER, INTENT(IN) :: n1,n2
-    INTEGER :: assert_eq2
-    if (n1 == n2) then
-        assert_eq2=n1
-    else
-        write (*,*) 'nrerror: an assert_eq failed with this tag:', &
-            string
-        STOP 'program terminated by assert_eq2'
-    end if
-    END FUNCTION assert_eq2
-
-    FUNCTION assert_eq3(n1,n2,n3,string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    INTEGER, INTENT(IN) :: n1,n2,n3
-    INTEGER :: assert_eq3
-    if (n1 == n2 .and. n2 == n3) then
-        assert_eq3=n1
-    else
-        write (*,*) 'nrerror: an assert_eq failed with this tag:', &
-            string
-        STOP 'program terminated by assert_eq3'
-    end if
-    END FUNCTION assert_eq3
-
-    FUNCTION assert_eq4(n1,n2,n3,n4,string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    INTEGER, INTENT(IN) :: n1,n2,n3,n4
-    INTEGER :: assert_eq4
-    if (n1 == n2 .and. n2 == n3 .and. n3 == n4) then
-        assert_eq4=n1
-    else
-        write (*,*) 'nrerror: an assert_eq failed with this tag:', &
-            string
-        STOP 'program terminated by assert_eq4'
-    end if
-    END FUNCTION assert_eq4
-
-    FUNCTION assert_eqn(nn,string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    INTEGER, DIMENSION(:), INTENT(IN) :: nn
-    INTEGER :: assert_eqn
-    if (all(nn(2:) == nn(1))) then
-        assert_eqn=nn(1)
-    else
-        write (*,*) 'nrerror: an assert_eq failed with this tag:', &
-            string
-        STOP 'program terminated by assert_eqn'
-    end if
-    END FUNCTION assert_eqn
-
-    SUBROUTINE nrerror(string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    write (*,*) 'nrerror: ',string
-    STOP 'program terminated by nrerror'
-    END SUBROUTINE nrerror
 
     FUNCTION outerprod_r(a,b)
     real, DIMENSION(:), INTENT(IN) :: a,b
@@ -267,11 +206,11 @@ module constants
                                         ! singular value is less than this, it is considered zero.  This is key when
                                         ! computing rank of the variance-covariance matrix. Mark uses 0.5e-6.
 
-    !integer, parameter :: PRNT = 0   ! debugging parameter, 0= no likelihood output, 1= likelihood output, 2 = likelihood and gradient output
 
-    integer, parameter :: logfile = 10 ! file handle of the log file, when tracing.
+!    integer, parameter :: logfile = 10 ! file handle of the log file, when tracing.
+    integer :: logfile = 10 ! used this assignable handle for debugging
 
-    ! These are set at run time by calling subroutine set_constants
+!   These are set at run time by calling subroutine set_constants
     double precision :: max_e_able     ! largest number that won't overflow when exp'ed
     double precision :: min_e_able     ! smallest negative number that won't underflow when exp'ed
     double precision :: max_log_able   ! largest number we can take log of
@@ -283,32 +222,29 @@ module constants
     double precision :: deltax = 1.0D-8       ! Gary's method.   Got this value from mark.f
 
 
-    ! Tolerance for parameters (coefficeint) values during maximization
-    !double precision :: beta_tol = 1e-7
-    ! TOLERANCE IS NOW PASSED IN BY THE USER
-
 
     logical, parameter :: central_diffs = .true.  ! whether to take central differences to approximate derivative/gradient.
                               !.False. = one-sided difference which are less accurate, but less costly
                               ! because we don't have to compute log like twice
 
-    !double precision, parameter :: delta = 0.0001   ! Delta muliplier for computing derivatives
+!    double precision, parameter :: delta = 0.0001   ! Delta muliplier for computing derivatives
 
     double precision, parameter :: missing = -999999.0D0  ! value to signify missing value to S or R. Used, e.g., for residuals.
 
-    integer, parameter :: chi_tab_rows = 4 ! # of rows in the chi square tables of mrawin_gof
-    integer, parameter :: orow = 1  ! row number for observed values in fit_table
-    integer, parameter :: erow = 2  ! row number for expected values in fit_table
-    integer, parameter :: oerow = 3 ! row number for Chisq contribution in fit_table
-    integer, parameter :: userow = 4 ! indicator for whether to use the cell in fit_table
-    double precision, parameter :: chi_ruleofthumb = 2.0D0  ! Rule of thumb value for whether to use a cell in a GOF chi square table
+!   Parameters needed for GOF tests, but I changed to computing GOF tests in pure R code
+!    integer, parameter :: chi_tab_rows = 4 ! # of rows in the chi square tables of mrawin_gof
+!    integer, parameter :: orow = 1  ! row number for observed values in fit_table
+!    integer, parameter :: erow = 2  ! row number for expected values in fit_table
+!    integer, parameter :: oerow = 3 ! row number for Chisq contribution in fit_table
+!    integer, parameter :: userow = 4 ! indicator for whether to use the cell in fit_table
+!    double precision, parameter :: chi_ruleofthumb = 2.0D0  ! Rule of thumb value for whether to use a cell in a GOF chi square table
+!    integer, parameter :: HL_nbins = 10 !number of bins for Hos-Lem statistic
 
     integer, parameter :: chat_rot = 5 ! C-hat rule of thumb. If all cells in a Test 2 or Test 3 Chi-square table are greater or equal this, use it in computation of c-hat
 
-    integer, parameter :: HL_nbins = 10 !number of bins for Hos-Lem statistic
 
-    double precision, parameter :: pi_mult = 100.0D0   ! Applies to sine link only.  Change this to give sine link more range. 
-                                                       ! Sine link is 0 when x less than this number.  Sine link is 1 when x greater than this number.
+    double precision, parameter :: pi_mult = 4.0D0   ! Applies to sine link only.  Change this to give sine link more range. 
+                                                     ! Sine link is 0 when x less than this number.  Sine link is 1 when x greater than this number.
 
 end module
 
@@ -567,10 +503,12 @@ subroutine cjsmod( nan, &
     if( trace /= 0 ) then 
         OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
         if ( ioerr /= 0 ) then
-            ! Cannot open log file
-            stop
+            ! Cannot open log file, can't do trace
+            trace = 0
         end if
-
+    end if
+    
+    if( trace /= 0 ) then
         !  Write header to log file.
         call date_and_time( date, time )
         date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
@@ -792,13 +730,14 @@ subroutine hugginsmodel( &
 
 !    ---- Open a log file, if called for by the user
     if (trace /= 0) then 
-
         OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
         if ( ioerr /= 0 ) then
-            ! Cannot open log file
-            stop
+            ! Cannot open log file, so can't do trace
+            trace = 0
         end if
+    end if
 
+    if (trace /= 0) then
         ! ---- Write header to log file.
         call date_and_time( date, time )
         date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
@@ -808,6 +747,7 @@ subroutine hugginsmodel( &
                          " Date and time of run: ",a,1x,a/)
     end if
 
+    
 !    ---- Set some program constants at run time
     call set_constants()
 
@@ -840,9 +780,14 @@ subroutine hugginsmodel( &
         end do
     end if
 
+
+   
     call Huggins_estim(ptr_np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
         pos_def_code, df, maxfn, beta_tol_vec)
 
+    
+    
+    
     ! output from estim is parameters, loglik, covariance, df, and codes.
     ! previous values are destroyed
     if( exit_code == 1 ) then
@@ -973,29 +918,28 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
     double precision, dimension(np) :: g ! gradient vector
     double precision, dimension(np*(np+1)/2) :: h ! hessian, see VA09AD for description of format
     double precision, dimension(3*np) :: W
-    !double precision, dimension(np, np) :: hess
-
     double precision, external :: CJS_loglik
     integer, external :: matrank
-
     external CJS_obj  ! objective function for minimization
-
     integer :: ij, i, j
+
+    ! Local copies of some parameters. Added to get around the following warning: 
+    ! Warning: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)    
+    !   You can't associate a number, like '1', with an intent(inout) variable in function calls
+    double precision :: dfn = -2.0
+    integer :: mode = 1
 
 
     ! Do the minimization using specified algorithm
     select case (algorithm)
 
         case (:1, 3:)
+
             ! The algorithm used by Mark
-            !write(*,*) "Calling VA09AD..."
-            if( trace /= 0 ) write(logfile,*) "calling VA09AD..."
-
-            call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, max_fn, trace, exit_code)
-
-            if( trace /= 0 ) write(logfile,*) "Back from VA09AD.."
+            !call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, max_fn, trace, exit_code)
 
         case (2)
+
             ! The algorithm used by MRAWIN4 = DFPMIN
             exit_code = -1
 
@@ -1095,7 +1039,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
 
         if( cov_npd == 1 ) then
             if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
-            df = 0
+            !df = 0
         else if (cov_npd == 2) then
             if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
         end if
@@ -1154,6 +1098,10 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
     integer :: ij, i, j
 
+    double precision :: dfn = -2.0
+    integer :: mode = 1
+
+
     ! Set required precision
     !beta_tol_vec = beta_tol
 
@@ -1161,11 +1109,12 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
     select case (algorithm)
 
         case (:1, 3:)
+
             ! The algorithm used by Mark
-            !write(*,*) "Calling VA09AD..."
-            call VA09AD(Huggins_obj,np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, maxfn, trace, exit_code)
+            call VA09AD(Huggins_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, maxfn, trace, exit_code)
 
         case (2)
+
             ! The algorithm used by MRAWIN4 = DFPMIN
             exit_code = -1
 
@@ -1560,6 +1509,10 @@ SUBROUTINE Huggins_obj(p,beta,lnlik,grad)
     if( trace >= 2 ) then 
         write(logfile,*) "*****CALCULATING LOG LIKE******"
         write(logfile,*) "p=", p, "beta=", (beta(i), i=1,p)
+
+        close(logfile)
+        open(logfile,file='mra.log',status='old',access='append')
+        
     end if
     
     lnlik = -1.0D0 * Huggins_loglik(p, beta)
@@ -1567,6 +1520,8 @@ SUBROUTINE Huggins_obj(p,beta,lnlik,grad)
 !    Calculate the gradient
     if( trace >= 3 ) then
         write(logfile,*) "*****CALLING GRADIENT******"
+        close(logfile)
+        open(logfile,file='mra.log',status='old',access='append')
     end if
     
     call Huggins_gradient(p, beta, lnlik, grad)
@@ -1648,6 +1603,7 @@ double precision function Huggins_loglik(p, beta)
                     (1-ptr_hist(i,j))*log(1.0D0-vpij(j))
             end if
         end do
+        
         denom = log(1-denom)
 
         ! compute probability of recaptures after initial capture.
@@ -1661,6 +1617,10 @@ double precision function Huggins_loglik(p, beta)
         end if
 
         ! Compute log-likelihood contribution for animal i
+        !write(logfile, *) "Done with animal ", i
+        !write(logfile, *) "sum_part = ", sum_ppart, "sum_cpart = ", sum_cpart, "denom =", denom
+        !write(logfile, *) "---------------------------------------------------------------------------------------"
+        
         xlnlik = xlnlik + sum_ppart + sum_cpart - denom
 
     end do
@@ -1991,7 +1951,7 @@ double precision function hazard_link( eta )
     z=min(eta,max_e_able)
     z=max(z,-max_e_able)
 
-    hazard_link = 1.0D0 - exp( -exp( z/20.0D0 ))
+    hazard_link = 1.0D0 - exp( -exp( z ))
 
 end function
 
@@ -2078,6 +2038,8 @@ end subroutine
 ! ---------------------------------------------------------------------------------------------
 
 SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
+! Parameters in call from CJS: CJS_obj,    np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, max_fn, trace, exit_code
+! Parameters in call from Hug: Huggins_obj,np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, maxfn, trace, exit_code
 !
 !    Purpose: to maximize the capture-recapture log likelihood using the VA09AD algorithm
 !    from HSL.  This is the same routine used by MARK.  See hsl.rl.ac.uk for the HSL library.
@@ -2126,11 +2088,10 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 !
 !    Modified by Trent McDonald for Fortran 95 conventions.
     use constants, only: logfile
-    use globevars, only: trace
     implicit none
 
     double precision, intent(inout) :: DFN,F
-    integer, intent(inout) :: IEXIT,IPRINT,MAXFN,MODE, n
+    integer, intent(inout) :: IEXIT,IPRINT,MAXFN,MODE, N
     double precision, intent(inout), dimension(n) :: EPS,G,X
     double precision, intent(inout), dimension(n*(n+1)/2) :: H
     double precision, intent(inout), dimension(3*n) :: W
@@ -2138,6 +2099,11 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 
     double precision :: ALPHA,DF,DGS,EPSMCH,FY,GS,GS0,GYS,SIG,TOT,Z,ZZ
     INTEGER :: I,ICON,IFN,IG,IGG,IJ,IR,IS,ITN,J,NN
+    
+    integer :: One = 1
+    integer :: Zero = 0
+    double precision :: ZeroD = 0.0
+    
 
     double precision, external :: FD05AD
 
@@ -2147,6 +2113,7 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 !     Following, down to the end of the routine, is unaltered code from HSL, except that I
 !    changed all the "0.D0" and the like to "0.0_dbl" and the like.
 
+        
         EPSMCH = FD05AD(1)*10.0D0
         IF (IPRINT.NE.0) WRITE (logfile,FMT=1000)
  1000   FORMAT (' ENTRY TO VA09AD',/)
@@ -2182,11 +2149,11 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         IF (MOD(ITN,IPRINT).NE.0) GO TO 21
         WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
  1001   FORMAT (1x,"Iteration=",I5,1x,"Function evals=",I5,1x,"Exit code=",I5,1x,"Loglik=",D24.16)
-        !WRITE (logfile,FMT=1002) "F=", F
+        WRITE (logfile,FMT=1002) "F=", F
  1002   FORMAT (1x,A,1x,500(1x,5D24.16,/))
         IF (IPRINT.LT.0) GO TO 21
-        !WRITE (logfile,FMT=1002) "X=", (X(I),I=1,N)
-        !WRITE (logfile,FMT=1002) "G=", (G(I),I=1,N)
+        WRITE (logfile,FMT=1002) "X=", (X(I),I=1,N)
+        WRITE (logfile,FMT=1002) "G=", (G(I),I=1,N)
    21   CONTINUE
         ITN = ITN + 1
         DO 22 I = 1,N
@@ -2251,22 +2218,23 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         IF (DGS+ALPHA*GS0.GT.0.0D0) GO TO 60
         SIG = 1.0D0/GS0
         IR = -IR
-        CALL MC11AD(H,N,G,SIG,W,IR,1,0.0D0)
+        
+        CALL MC11AD(H,N,G,SIG,W,IR,One,ZeroD)
         DO 52 I = 1,N
    52   G(I) = W(IGG+I) - W(IG+I)
         SIG = 1.0D0/ (ALPHA*DGS)
         IR = -IR
-        CALL MC11AD(H,N,G,SIG,W,IR,0,0.0D0)
+        CALL MC11AD(H,N,G,SIG,W,IR,Zero,ZeroD)
         GO TO 70
    60   CONTINUE
         ZZ = ALPHA/ (DGS-ALPHA*GS0)
         SIG = -ZZ
-        CALL MC11AD(H,N,G,SIG,W,IR,1,EPSMCH)
+        CALL MC11AD(H,N,G,SIG,W,IR,One,EPSMCH)
         Z = DGS*ZZ - 1.0D0
         DO 61 I = 1,N
    61   G(I) = W(IGG+I) + Z*W(IG+I)
         SIG = 1.0D0/ (ZZ*DGS**2)
-        CALL MC11AD(H,N,G,SIG,W,IR,0,0.0D0)
+        CALL MC11AD(H,N,G,SIG,W,IR,Zero,ZeroD)
    70   CONTINUE
         DO 71 I = 1,N
    71   G(I) = W(IGG+I)
@@ -3084,738 +3052,750 @@ subroutine huggins_n_hat(nan,ns,np,nx,beta,covariance,p_hat,nhat_v_meth, n_hat,s
 end subroutine
 
 ! ----------------------------------------------------------------------------------------------
-subroutine mragof( nan, ns, hist, p_hat, s_hat, resid_type, &
-        t4_table, t4_chi, t4_df, &
-        t5_table, t5_chi, t5_df, &
-        HL_table, HL_chi, HL_df, &
-        marray_table, marray_chi, marray_df, &
-        roc, residuals, released, cell_expected)
 !
-!   Compute various measures of goodness-of-fit for a capture recapture model.
-!   This routine is designed to be exposed in the DLL, and called after estimation
-!   in mrawin.
+!   OKAY, I ADMIT I CANNOT REMEMBER WHY I WROTE THESE GOF ROUTINES HERE.  THEY ARE 
+!   ALL IMPLEMENTED IN PURE R CODE IN F.CJS.GOF().  I MUST HAVE STARTED HERE THEN 
+!   SWITCHED TO ALL R.  iN ANY EVENT, I AM COMMENTING THEM ALL OUT, JUST IN CASE I NEED 
+!   THEM LATER.
+!subroutine mragof( nan, ns, hist, p_hat, s_hat, resid_type, &
+!        t4_table, t4_chi, t4_df, &
+!        t5_table, t5_chi, t5_df, &
+!        HL_table, HL_chi, HL_df, &
+!        marray_table, marray_chi, marray_df, &
+!        roc, residuals, released, cell_expected, &
+!        input_trace )
+!!
+!!   Compute various measures of goodness-of-fit for a capture recapture model.
+!!   This routine is designed to be exposed in the DLL, and called after estimation
+!!   in mrawin.
+!!
+!!   Input:
+!!   nan = number of animals = number of rows in capture histories
+!!   ns = number of capture occasions/samples
+!!   hist = capture history matrix (size nan X ns)
+!!   p_hat = matrix of probability of capture estimates (size nanXns, first column not used)
+!!   s_hat = matrix of survival probabilities (size nanXns, last column never used)
+!!   resid_type = Type of residuals to compute.  0 (default) produces Pearson residuals.
+!!           1 produces deviance residuals.
+!!   input_trace = whether to write results to log file. See defn of trace in globevars module.
+!!
+!!   Output:
+!!   t4_chi = Test 4 chi square value.  Test 4 computes an expected number of captures each occasion.
+!!   t4_df = Test 4 degrees of freedom.
+!!   t5_chi = Test 5 Chi square value.  Test 5 computes expected number of captures for each animal, then sums over animals.
+!!   t5_df = Test 5 degrees of freedom.
+!!   HL_chi = Hosmer-Lemeshow chi square value.  Computed over all animals and occasions
+!!   HL_df = Hosmer-Lemeshow degrees of freedom.
+!!   ROC = overall ROC statistic.
+!!   residuals = matrix of residuals (nanXns)
+!!   marray_table = observed, expected, contribution and use cell for marry_test
+!!   marray_chi = chi square statistic for marray test
+!!   marray_df = df for the marray test
+!!   released = number released each occasion.  Part of the m-array
+!!   cell_expected = expected value of each capture-indicator in the capture history, following
+!!       initial encounter.  Return this because its possble to pool over different things
+!!       and construct your own test.
+!!
+!!   Some other gof test, such as the Osius-Rojek, are computed elsewhere (in R or S)
+!!   because it was easier there.
+!!
+!    use constants
+!    use globevars
+!    implicit none
 !
-!   Input:
-!   nan = number of animals = number of rows in capture histories
-!   ns = number of capture occasions/samples
-!   hist = capture history matrix (size nan X ns)
-!   p_hat = matrix of probability of capture estimates (size nanXns, first column not used)
-!   s_hat = matrix of survival probabilities (size nanXns, last column never used)
-!   resid_type = Type of residuals to compute.  0 (default) produces Pearson residuals.
-!           1 produces deviance residuals.
+!!   Can't have this if compiling with G95.  Must use if compiling with Layhey lf95.
+!!    dll_export mragof
 !
-!   Output:
-!   t4_chi = Test 4 chi square value.  Test 4 computes an expected number of captures each occasion.
-!   t4_df = Test 4 degrees of freedom.
-!   t5_chi = Test 5 Chi square value.  Test 5 computes expected number of captures for each animal, then sums over animals.
-!   t5_df = Test 5 degrees of freedom.
-!   HL_chi = Hosmer-Lemeshow chi square value.  Computed over all animals and occasions
-!   HL_df = Hosmer-Lemeshow degrees of freedom.
-!   ROC = overall ROC statistic.
-!   residuals = matrix of residuals (nanXns)
-!   marray_table = observed, expected, contribution and use cell for marry_test
-!   marray_chi = chi square statistic for marray test
-!   marray_df = df for the marray test
-!   released = number released each occasion.  Part of the m-array
-!   cell_expected = expected value of each capture-indicator in the capture history, following
-!       initial encounter.  Return this because its possble to pool over different things
-!       and construct your own test.
-!
-!   Some other gof test, such as the Osius-Rojek, are computed elsewhere (in R or S)
-!   because it was easier there.
-!
-    use constants
-    use globevars
-    implicit none
-
-!   Can't have this if compiling with G95.  Must use if compiling with Layhey lf95.
-!    dll_export mragof
-
-!    Input variables
-    integer, intent(inout), target :: nan, ns
-    integer, intent(inout), dimension(nan,ns), target :: hist
-    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-    integer, intent(inout) :: resid_type
-
-!    Output variables
-    double precision, intent(inout) :: t4_chi, t4_df, t5_chi, t5_df, HL_chi, HL_df, roc, marray_chi, marray_df
-    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
-    double precision, intent(inout), dimension(chi_tab_rows,nan) :: t5_table
-    double precision, intent(inout), dimension(chi_tab_rows,ns)  :: t4_table
-    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
-    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns)  :: marray_table
-    integer, intent(inout), dimension(ns)  :: released
-
-!   Local varaibles
-    integer, dimension(nan), target :: first, last
-    integer :: ioerr
-
-!    ---- Open a log file to store intermediate tables that may be of use
-    OPEN(logfile,FILE="mra_gof.log",status="replace",iostat=ioerr)
-    if ( ioerr /= 0 ) then
-        ! Cannot open log file
-        stop
-    end if
-
-!   ---- Assign pointers
-    ptr_hist => hist
-
-!   ---- Compute locations of first and last capture.  Needed for tests.
-    call location( nan, ns, hist, first, last)
-    ptr_first => first
-    ptr_last => last
-
-!   ---- Run tests
-
-    call marray_gof(nan, ns, p_hat, s_hat, marray_table, marray_chi, marray_df, released )
-
-    call t4_gof(nan, ns, p_hat, s_hat, resid_type, t4_table, t4_chi, t4_df, residuals, cell_expected )
-
-    call t5_gof(nan, ns, cell_expected, t5_table, t5_chi, t5_df )
-
-    call HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
-
-    call roc_gof(nan, ns, cell_expected, roc)
-
-    close(logfile)
-
-end subroutine
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine marray_gof(nan, ns, p_hat, s_hat, fit_table, fit_chisq, fit_chidf, relese )
-!
-!    Purpose: Compute a global goodness of fit statistic using the m-array for
-!   counts.
-!
-!    Input
-!    nan,ns,p_hat,s_hat
-!
-!    Output:
-!    fit_chisq (scalar), fit_chidf (scalar)
-!   fit_table = 4X((ns-1)*ns) array containing observed, expected, contribution, and whether
-!       to use the cell for computing Chi square
-!   relese = number of releases each occasion
-
-    use constants
-    use globevars
-    implicit none
-
-    integer, intent(inout) :: nan, ns
-
-    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-    double precision, intent(inout) :: fit_chisq, fit_chidf
-    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns) :: fit_table
-    integer, intent(inout), dimension(ns) :: relese
-
-    integer :: i,j,k, l
-    double precision :: contrib, o, e
-
-    fit_table = 0.D0
-    fit_chidf = 0.D0
-    fit_chisq = 0.D0
-    relese = 0
-
-    ! ---- Compute the M array
-    DO i=1,nan
-        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-            do j = ptr_first(i)-1, ns-1
-                if (ptr_hist(i,j) >= 1) then
-                    relese(j) = relese(j) + 1
-                    do k = j+1, ns
-                        if (ptr_hist(i,k) >= 1) then
-                               fit_table(orow,(j-1)*ns+k-1) = fit_table(orow,(j-1)*ns+k-1) + 1.D0
-                               exit
-                           end if
-                    end do
-                end if
-             end do
-        end if
-    end do
-
-    ! ---- Compute expected values for counts in M array
-    DO i=1,nan
-        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-            do j = ptr_first(i)-1, ns-1
-                do k = j+1, ns
-                       ! compute contribution to expected value for count m_(jk)
-                       contrib = s_hat(i,j)
-                       do l = j+1, k-1
-                           contrib = contrib * (1.D0 - p_hat(i,l)) * s_hat(i,l)
-                       end do
-                       contrib = contrib * p_hat(i,k)
-                       fit_table(erow,(j-1)*ns+k-1) = fit_table(erow,(j-1)*ns+k-1) + contrib
-                end do
-             end do
-        end if
-    end do
-
-    ! ---- Compute contribution to chi-square = (obs-exp)^2/exp
-    do j = 1,ns-1
-        do k = j+1,ns
-            o = fit_table(orow,(j-1)*ns+k-1)
-            e = fit_table(erow,(j-1)*ns+k-1)
-            fit_table(oerow,(j-1)*ns+k-1) = (o - e)*(o - e) / e
-            if( e >= chi_ruleofthumb ) then
-                fit_table(userow, (j-1)*ns+k-1) = 1.D0
-                fit_chisq = fit_chisq + fit_table(oerow,(j-1)*ns+k-1)
-                fit_chidf = fit_chidf + 1.D0
-            end if
-        end do
-    end do
-
-    if( fit_chidf > 0.D0 ) then
-        fit_chidf = fit_chidf - 1.D0
-    end if
-
-    ! Write table to the log
-    if(trace /= 0) then
-            write(logfile, 100) (i, i=2,ns)
-        100 format(1x, /" Overall Goodness of Fit Based on M-array"/ &
-                        " ========================================"/ &
-                        " OBSERVED", (1x,10(i8,1x)))
-        300 format(1x, i8,(1x,10(f8.1,1x)))
-            do j = 1,ns-1
-                write(logfile, 300) j,(fit_table(orow,(j-1)*ns + k-1), k=2,ns)
-            end do
-        
-            write(logfile, 400) (i, i=2,ns)
-        400 format(1x, /" EXPECTED", (1x,10(i8,1x)))
-            do j = 1,ns-1
-                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
-            end do
-        
-            write(logfile, 600) (i, i=2,ns)
-        600 format(1x, /" CONTRIB ", (1x,10(i8,1x)))
-            do j = 1,ns-1
-                write(logfile, 300) j,(fit_table(oerow,(j-1)*ns + k-1), k=2,ns)
-            end do
-        
-            write(logfile, 800) (i, i=2,ns)
-        800 format(1x, /" USE CELL", (1x,10(i8,1x)))
-            do j = 1,ns-1
-                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
-            end do
-        
-        
-            WRITE(logfile,700) fit_chisq, fit_chidf
-        700 FORMAT( " ======================================="// &
-                     " Overall GOF Test on M-array Chisq =",F14.5, " on ", F7.0, " df")
-    end if
-
-end subroutine
-
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
-!
-!    Purpose: Compute Hosmer-Lemeshow goodness of fit statistic.
-!
-!    Input
-!    nan,ns,p_hat,s_hat
-!
-!    Output:
-!   HL_chi = Chi square value of HL statistic, See Hos-Lem, p.147
-!   HL_df = degrees of freedome for the HL stat
-!
-    use constants
-    use globevars
-    implicit none
-
-    integer, intent(in) :: nan, ns
-
-    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-    double precision, intent(in), dimension(nan,ns) :: cell_expected
-    double precision, intent(inout) :: HL_chi, HL_df
-    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
-
-    integer :: i, j, n, n_per_bin
-    !double precision :: ee, s
-    double precision, dimension(nan*ns) :: p
-    integer, dimension(nan*ns) :: y
-
-!   ---- Reformat expected values
-    n = 0
-    p = 0.D0
-    y = -1
-    do i = 1, nan
-
-        ! This code recalculates cell expected values, but we have already done that
-        ! in routine t4_gof.
-!        s = 1.D0
-!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!            do j = ptr_first(i), ns
-!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!                n = n + 1
-!                p(n) = ee
-!                y(n) = ptr_hist(i,j)
-!            end do
-!        end if
-
-        ! Find the non-negative expected values, and put them into p and y vectors so can sort properly.
-        do j = 1, ns
-            if( cell_expected(i,j) >= 0 ) then
-                n = n + 1
-                p(n) = cell_expected(i,j)
-                y(n) = ptr_hist(i,j)
-            end if
-        end do
-    end do
-
-!   ---- Sort the p's and compute HL statistic
-    call bubble_sort(n,p,y)
-
-    n_per_bin = nint( real(n) / real(HL_nbins) )
-    HL_table = 0.D0
-    do i = 1,HL_nbins-1
-        do j = 1, n_per_bin
-            HL_table(orow, i) = HL_table(orow, i) + y( (i-1)*n_per_bin + j )
-            HL_table(erow, i) = HL_table(erow, i) + p( (i-1)*n_per_bin + j )
-        end do
-    end do
-    do j = (HL_nbins-1)*n_per_bin + 1, n  ! last cell
-        HL_table(orow, HL_nbins) = HL_table(orow, HL_nbins) + y( j )
-        HL_table(erow, HL_nbins) = HL_table(erow, HL_nbins) + p( j )
-    end do
-
-    HL_chi = 0.D0
-    HL_df  = 0.D0
-    do i = 1,HL_nbins
-        if( HL_table(erow,i) >= chi_ruleofthumb ) then
-            HL_table(oerow,i) = (HL_table(orow,i)-HL_table(erow,i))*(HL_table(orow,i)-HL_table(erow,i)) / HL_table(erow,i)
-            HL_table(userow,i) = 1.D0
-            HL_chi = HL_chi + HL_table(oerow,i)
-            HL_df  = HL_df  + 1.D0
-        end if
-    end do
-    if( HL_df > 0.D0 ) then
-        HL_df = HL_df - 1.D0
-    end if
-
-
-    ! Write table to the log
-    if (trace /= 0) then 
-            write(logfile, 100) (i, i=1,HL_nbins)
-        100 format(1x, /" Hosmer-Lemeshow Goodness of Fit Contingency Table"/ &
-                        " ================================================="/ &
-                        "Prob.Bin", (1x,10(i8,1x)))
-            write(logfile, 300) (HL_table(orow,i), i=1,HL_nbins)
-        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-            write(logfile, 400) (HL_table(erow,i), i=1,HL_nbins)
-        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-            write(logfile, 500) (HL_table(oerow,i), i=1,HL_nbins)
-        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-            write(logfile, 600) (HL_table(userow,i), i=1,HL_nbins)
-        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-        
-            WRITE(logfile,700) HL_chi, HL_df
-        700 FORMAT(     " =============================================="// &
-                         " Hosmer-Lemeshow GOF Chisq =",F14.5, " on ", F7.0, " df")
-    end if
-
-end subroutine
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine bubble_sort(n,x,y)
-!
-!   sort the vector x, with parallel vector y
-!
-      use constants
-      implicit none
-
-      INTEGER, intent(in) ::  n
-      double precision, intent(inout), dimension(n) :: x
-      integer, intent(inout), dimension(n) :: y
-
-      integer :: tempi
-      double precision :: tempr, smallest
-      integer :: smallpos, cur, i
-
-!     This is an implementation of bubble sort, which is slow, but
-!     easy to code.
-!     EVENTUALLY, IT WOULD BE NICE TO IMPLEMENT QUICKSORT HERE.
-
-      do cur=1,(n-1)
-
-         smallest = x(cur)
-         smallpos = cur
-
-         do i = (cur+1),n
-            if( x(i) < smallest ) then
-               smallest = x(i)
-               smallpos = i
-            endif
-         end do
-
-!        Swap cur and smallest value
-         if( smallpos .ne. cur ) then
-            tempr = x(cur)
-            x(cur) = x(smallpos)
-            x(smallpos) = tempr
-
-            tempi = y(cur)
-            y(cur) = y(smallpos)
-            y(smallpos) = tempi
-         endif
-
-      end do
-
-end subroutine
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine roc_gof(nan, ns, cell_expected, roc )
-!
-!    Purpose: Compute ROC (area under curve) goodness of fit statistic.
-!
-!    Input
-!    nan,ns,p_hat,s_hat
-!
-!    Output:
-!   roc = value of roc statistic, See Hos-Lem, p.160
-!
-    use constants
-    use globevars
-    implicit none
-
-    integer, intent(in) :: nan, ns
-
+!!    Input variables
+!    integer, intent(inout), target :: nan, ns
+!    integer, intent(inout), dimension(nan,ns), target :: hist
 !    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-    double precision, intent(in), dimension(nan,ns) :: cell_expected
-    double precision, intent(inout) :: roc
-
-    integer :: i, j, n_ones, n_zeros
-    double precision :: ee
-    double precision, dimension(nan*ns) :: p_ones, p_zeros
-
-    double precision, parameter :: near_zero = 1e-6
-
-!   ---- Compute expected values
-    n_ones = 0
-    n_zeros = 0
-    p_ones = 0.D0
-    p_zeros = 0.D0
-    do i = 1, nan
-
-!        s = 1.D0
-!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-            do j = ptr_first(i), ns
-                if (cell_expected(i,j) > 0) then
-
-!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!                ee = s*p_hat(i,j)   ! note first capture probability never used
-
-                    ee = cell_expected(i,j)
-
-                    if ( ptr_hist(i,j) >= 1 ) then
-                        n_ones = n_ones + 1
-                        p_ones( n_ones ) = ee
-                    else
-                        n_zeros = n_zeros + 1
-                        p_zeros( n_zeros ) = ee
-                    end if
-                end if
-            end do
+!    integer, intent(inout) :: resid_type, input_trace
+!
+!!    Output variables
+!    double precision, intent(inout) :: t4_chi, t4_df, t5_chi, t5_df, HL_chi, HL_df, roc, marray_chi, marray_df
+!    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
+!    double precision, intent(inout), dimension(chi_tab_rows,nan) :: t5_table
+!    double precision, intent(inout), dimension(chi_tab_rows,ns)  :: t4_table
+!    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
+!    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns)  :: marray_table
+!    integer, intent(inout), dimension(ns)  :: released
+!
+!!   Local varaibles
+!    integer, dimension(nan), target :: first, last
+!    integer :: ioerr
+!
+!!   Store input trace value in globevars module
+!    trace = input_trace 
+!    
+!!    ---- Open a log file to store intermediate tables that may be of use
+!    if( trace /= 0 ) then 
+!        OPEN(logfile,FILE="mra_gof.log",status="replace",iostat=ioerr)
+!        if ( ioerr /= 0 ) then
+!            ! Cannot open log file
+!            trace = 0
 !        end if
-    end do
-
-    ! --- Compute ROC statistic, this is the same as the Mann-Whitney U
-    roc = 0.D0
-    do i = 1, n_ones
-        do j = 1, n_zeros
-
-            if( abs(p_ones(i) - p_zeros(j)) <= near_zero ) then
-                roc = roc + 0.5D0
-            else if( p_ones(i) > p_zeros(j) ) then
-                roc = roc + 1.D0
-            end if
-
-        end do
-    end do
-    roc = roc / (n_ones * n_zeros)
-
-end subroutine
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine t5_gof(nan, ns, cell_expected, fit_table, fit_chisq, fit_chidf )
+!    end if
 !
-!    Purpose: Compute goodness of fit statistic across individuals for the model,
+!!   ---- Assign pointers
+!    ptr_hist => hist
 !
-!    Input
-!    nan,ns,
-!   cell_expected = nanXns matrix containing cell expected values.  Computed in t4_gof.
-!       cell_expected < 0 for cells that should not be used.
+!!   ---- Compute locations of first and last capture.  Needed for tests.
+!    call location( nan, ns, hist, first, last)
+!    ptr_first => first
+!    ptr_last => last
 !
-!    Output:
-!    fit_chisq (scalar), fit_chidf (scalar)
-!   fit_table = 3Xnan array containing observed, expected, and contribution to Chi square
-
-    use constants
-    use globevars
-    implicit none
-
-    integer, intent(in) :: nan, ns
-
-    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-    double precision, intent(in), dimension(nan,ns) :: cell_expected
-    double precision, intent(inout) :: fit_chisq, fit_chidf
-    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
-
-    integer :: i,j
-    !double precision :: s, ee, se_ee, lee
-    double precision :: o, e
-
-    fit_table = 0.D0
-    fit_chidf = 0.D0
-    fit_chisq = 0.D0
-    do i = 1, nan
-
-        ! This code re-computes the expected value of each cell.  But, already did this
-        ! in t4_gof, so don't do it again.
-!        s = 1.D0
+!!   ---- Run tests
+!
+!    call marray_gof(nan, ns, p_hat, s_hat, marray_table, marray_chi, marray_df, released )
+!
+!    call t4_gof(nan, ns, p_hat, s_hat, resid_type, t4_table, t4_chi, t4_df, residuals, cell_expected )
+!
+!    call t5_gof(nan, ns, cell_expected, t5_table, t5_chi, t5_df )
+!
+!    call HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
+!
+!    call roc_gof(nan, ns, cell_expected, roc)
+!
+!    close(logfile)
+!
+!end subroutine
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine marray_gof(nan, ns, p_hat, s_hat, fit_table, fit_chisq, fit_chidf, relese )
+!!
+!!    Purpose: Compute a global goodness of fit statistic using the m-array for
+!!   counts.
+!!
+!!    Input
+!!    nan,ns,p_hat,s_hat
+!!
+!!    Output:
+!!    fit_chisq (scalar), fit_chidf (scalar)
+!!   fit_table = 4X((ns-1)*ns) array containing observed, expected, contribution, and whether
+!!       to use the cell for computing Chi square
+!!   relese = number of releases each occasion
+!
+!    use constants
+!    use globevars
+!    implicit none
+!
+!    integer, intent(inout) :: nan, ns
+!
+!    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
+!    double precision, intent(inout) :: fit_chisq, fit_chidf
+!    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns) :: fit_table
+!    integer, intent(inout), dimension(ns) :: relese
+!
+!    integer :: i,j,k, l
+!    double precision :: contrib, o, e
+!
+!    fit_table = 0.D0
+!    fit_chidf = 0.D0
+!    fit_chisq = 0.D0
+!    relese = 0
+!
+!    ! ---- Compute the M array
+!    DO i=1,nan
 !        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
+!            do j = ptr_first(i)-1, ns-1
+!                if (ptr_hist(i,j) >= 1) then
+!                    relese(j) = relese(j) + 1
+!                    do k = j+1, ns
+!                        if (ptr_hist(i,k) >= 1) then
+!                               fit_table(orow,(j-1)*ns+k-1) = fit_table(orow,(j-1)*ns+k-1) + 1.D0
+!                               exit
+!                           end if
+!                    end do
+!                end if
+!             end do
+!        end if
+!    end do
+!
+!    ! ---- Compute expected values for counts in M array
+!    DO i=1,nan
+!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
+!            do j = ptr_first(i)-1, ns-1
+!                do k = j+1, ns
+!                       ! compute contribution to expected value for count m_(jk)
+!                       contrib = s_hat(i,j)
+!                       do l = j+1, k-1
+!                           contrib = contrib * (1.D0 - p_hat(i,l)) * s_hat(i,l)
+!                       end do
+!                       contrib = contrib * p_hat(i,k)
+!                       fit_table(erow,(j-1)*ns+k-1) = fit_table(erow,(j-1)*ns+k-1) + contrib
+!                end do
+!             end do
+!        end if
+!    end do
+!
+!    ! ---- Compute contribution to chi-square = (obs-exp)^2/exp
+!    do j = 1,ns-1
+!        do k = j+1,ns
+!            o = fit_table(orow,(j-1)*ns+k-1)
+!            e = fit_table(erow,(j-1)*ns+k-1)
+!            fit_table(oerow,(j-1)*ns+k-1) = (o - e)*(o - e) / e
+!            if( e >= chi_ruleofthumb ) then
+!                fit_table(userow, (j-1)*ns+k-1) = 1.D0
+!                fit_chisq = fit_chisq + fit_table(oerow,(j-1)*ns+k-1)
+!                fit_chidf = fit_chidf + 1.D0
+!            end if
+!        end do
+!    end do
+!
+!    if( fit_chidf > 0.D0 ) then
+!        fit_chidf = fit_chidf - 1.D0
+!    end if
+!
+!    ! Write table to the log
+!    if(trace /= 0) then
+!            write(logfile, 100) (i, i=2,ns)
+!        100 format(1x, /" Overall Goodness of Fit Based on M-array"/ &
+!                        " ========================================"/ &
+!                        " OBSERVED", (1x,10(i8,1x)))
+!        300 format(1x, i8,(1x,10(f8.1,1x)))
+!            do j = 1,ns-1
+!                write(logfile, 300) j,(fit_table(orow,(j-1)*ns + k-1), k=2,ns)
+!            end do
+!        
+!            write(logfile, 400) (i, i=2,ns)
+!        400 format(1x, /" EXPECTED", (1x,10(i8,1x)))
+!            do j = 1,ns-1
+!                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
+!            end do
+!        
+!            write(logfile, 600) (i, i=2,ns)
+!        600 format(1x, /" CONTRIB ", (1x,10(i8,1x)))
+!            do j = 1,ns-1
+!                write(logfile, 300) j,(fit_table(oerow,(j-1)*ns + k-1), k=2,ns)
+!            end do
+!        
+!            write(logfile, 800) (i, i=2,ns)
+!        800 format(1x, /" USE CELL", (1x,10(i8,1x)))
+!            do j = 1,ns-1
+!                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
+!            end do
+!        
+!        
+!            WRITE(logfile,700) fit_chisq, fit_chidf
+!        700 FORMAT( " ======================================="// &
+!                     " Overall GOF Test on M-array Chisq =",F14.5, " on ", F7.0, " df")
+!    end if
+!
+!end subroutine
+!
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
+!!
+!!    Purpose: Compute Hosmer-Lemeshow goodness of fit statistic.
+!!
+!!    Input
+!!    nan,ns,p_hat,s_hat
+!!
+!!    Output:
+!!   HL_chi = Chi square value of HL statistic, See Hos-Lem, p.147
+!!   HL_df = degrees of freedome for the HL stat
+!!
+!    use constants
+!    use globevars
+!    implicit none
+!
+!    integer, intent(in) :: nan, ns
+!
+!    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
+!    double precision, intent(in), dimension(nan,ns) :: cell_expected
+!    double precision, intent(inout) :: HL_chi, HL_df
+!    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
+!
+!    integer :: i, j, n, n_per_bin
+!    !double precision :: ee, s
+!    double precision, dimension(nan*ns) :: p
+!    integer, dimension(nan*ns) :: y
+!
+!!   ---- Reformat expected values
+!    n = 0
+!    p = 0.D0
+!    y = -1
+!    do i = 1, nan
+!
+!        ! This code recalculates cell expected values, but we have already done that
+!        ! in routine t4_gof.
+!!        s = 1.D0
+!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
+!!            do j = ptr_first(i), ns
+!!                s = s*s_hat(i,j-1)  ! note last survival is never used
+!!                ee = s*p_hat(i,j)   ! note first capture probability never used
+!!                n = n + 1
+!!                p(n) = ee
+!!                y(n) = ptr_hist(i,j)
+!!            end do
+!!        end if
+!
+!        ! Find the non-negative expected values, and put them into p and y vectors so can sort properly.
+!        do j = 1, ns
+!            if( cell_expected(i,j) >= 0 ) then
+!                n = n + 1
+!                p(n) = cell_expected(i,j)
+!                y(n) = ptr_hist(i,j)
+!            end if
+!        end do
+!    end do
+!
+!!   ---- Sort the p's and compute HL statistic
+!    call bubble_sort(n,p,y)
+!
+!    n_per_bin = nint( real(n) / real(HL_nbins) )
+!    HL_table = 0.D0
+!    do i = 1,HL_nbins-1
+!        do j = 1, n_per_bin
+!            HL_table(orow, i) = HL_table(orow, i) + y( (i-1)*n_per_bin + j )
+!            HL_table(erow, i) = HL_table(erow, i) + p( (i-1)*n_per_bin + j )
+!        end do
+!    end do
+!    do j = (HL_nbins-1)*n_per_bin + 1, n  ! last cell
+!        HL_table(orow, HL_nbins) = HL_table(orow, HL_nbins) + y( j )
+!        HL_table(erow, HL_nbins) = HL_table(erow, HL_nbins) + p( j )
+!    end do
+!
+!    HL_chi = 0.D0
+!    HL_df  = 0.D0
+!    do i = 1,HL_nbins
+!        if( HL_table(erow,i) >= chi_ruleofthumb ) then
+!            HL_table(oerow,i) = (HL_table(orow,i)-HL_table(erow,i))*(HL_table(orow,i)-HL_table(erow,i)) / HL_table(erow,i)
+!            HL_table(userow,i) = 1.D0
+!            HL_chi = HL_chi + HL_table(oerow,i)
+!            HL_df  = HL_df  + 1.D0
+!        end if
+!    end do
+!    if( HL_df > 0.D0 ) then
+!        HL_df = HL_df - 1.D0
+!    end if
+!
+!
+!    ! Write table to the log
+!    if (trace /= 0) then 
+!            write(logfile, 100) (i, i=1,HL_nbins)
+!        100 format(1x, /" Hosmer-Lemeshow Goodness of Fit Contingency Table"/ &
+!                        " ================================================="/ &
+!                        "Prob.Bin", (1x,10(i8,1x)))
+!            write(logfile, 300) (HL_table(orow,i), i=1,HL_nbins)
+!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
+!            write(logfile, 400) (HL_table(erow,i), i=1,HL_nbins)
+!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
+!            write(logfile, 500) (HL_table(oerow,i), i=1,HL_nbins)
+!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
+!            write(logfile, 600) (HL_table(userow,i), i=1,HL_nbins)
+!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
+!        
+!            WRITE(logfile,700) HL_chi, HL_df
+!        700 FORMAT(     " =============================================="// &
+!                         " Hosmer-Lemeshow GOF Chisq =",F14.5, " on ", F7.0, " df")
+!    end if
+!
+!end subroutine
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine bubble_sort(n,x,y)
+!!
+!!   sort the vector x, with parallel vector y
+!!
+!      use constants
+!      implicit none
+!
+!      INTEGER, intent(in) ::  n
+!      double precision, intent(inout), dimension(n) :: x
+!      integer, intent(inout), dimension(n) :: y
+!
+!      integer :: tempi
+!      double precision :: tempr, smallest
+!      integer :: smallpos, cur, i
+!
+!!     This is an implementation of bubble sort, which is slow, but
+!!     easy to code.
+!!     EVENTUALLY, IT WOULD BE NICE TO IMPLEMENT QUICKSORT HERE.
+!
+!      do cur=1,(n-1)
+!
+!         smallest = x(cur)
+!         smallpos = cur
+!
+!         do i = (cur+1),n
+!            if( x(i) < smallest ) then
+!               smallest = x(i)
+!               smallpos = i
+!            endif
+!         end do
+!
+!!        Swap cur and smallest value
+!         if( smallpos .ne. cur ) then
+!            tempr = x(cur)
+!            x(cur) = x(smallpos)
+!            x(smallpos) = tempr
+!
+!            tempi = y(cur)
+!            y(cur) = y(smallpos)
+!            y(smallpos) = tempi
+!         endif
+!
+!      end do
+!
+!end subroutine
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine roc_gof(nan, ns, cell_expected, roc )
+!!
+!!    Purpose: Compute ROC (area under curve) goodness of fit statistic.
+!!
+!!    Input
+!!    nan,ns,p_hat,s_hat
+!!
+!!    Output:
+!!   roc = value of roc statistic, See Hos-Lem, p.160
+!!
+!    use constants
+!    use globevars
+!    implicit none
+!
+!    integer, intent(in) :: nan, ns
+!
+!!    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
+!    double precision, intent(in), dimension(nan,ns) :: cell_expected
+!    double precision, intent(inout) :: roc
+!
+!    integer :: i, j, n_ones, n_zeros
+!    double precision :: ee
+!    double precision, dimension(nan*ns) :: p_ones, p_zeros
+!
+!    double precision, parameter :: near_zero = 1e-6
+!
+!!   ---- Compute expected values
+!    n_ones = 0
+!    n_zeros = 0
+!    p_ones = 0.D0
+!    p_zeros = 0.D0
+!    do i = 1, nan
+!
+!!        s = 1.D0
+!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
 !            do j = ptr_first(i), ns
-               ! Recall that ptr_first(i) is set to first estimable capture probability,
-                   ! which is never 1 and is the first capture occasion AFTER first capture.
-                   ! Note also that ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
-!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!                fit_table(erow,i) = fit_table(erow,i) + ee  ! note first p_hat is never used
-                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
-                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
-!                if ( ptr_hist(i,j) >= 1 ) then
-!                    fit_table(orow,i) = fit_table(orow,i) + 1.D0
+!                if (cell_expected(i,j) > 0) then
+!
+!!                s = s*s_hat(i,j-1)  ! note last survival is never used
+!!                ee = s*p_hat(i,j)   ! note first capture probability never used
+!
+!                    ee = cell_expected(i,j)
+!
+!                    if ( ptr_hist(i,j) >= 1 ) then
+!                        n_ones = n_ones + 1
+!                        p_ones( n_ones ) = ee
+!                    else
+!                        n_zeros = n_zeros + 1
+!                        p_zeros( n_zeros ) = ee
+!                    end if
 !                end if
 !            end do
-
-        ! Compute sums over occasions
-        o = 0.D0
-        e = 0.D0
-        do j = 1, ns
-            if( cell_expected(i,j) >= 0 ) then
-                e = e + cell_expected(i,j)
-                if( ptr_hist(i,j) >= 1 ) then
-                    o = o + 1.D0
-                end if
-            end if
-        end do
-        fit_table(orow,i) = o
-        fit_table(erow,i) = e
-        fit_table(oerow,i) = (o - e)*(o - e) / e
-
-        ! Compute the chi-square statistic
-        if (fit_table(erow,i) >= chi_ruleofthumb) then
-            fit_table(userow,i) = 1.D0
-            fit_chisq = fit_chisq + fit_table(oerow,i)
-            fit_chidf = fit_chidf + 1.D0
-        end if
-
-    end do
-
-    if( fit_chidf > 0.D0 ) then
-        fit_chidf = fit_chidf - 1.D0
-    end if
-
-    ! Write table to the log
-    if (trace /= 0) then
-            write(logfile, 100) (i, i=1,nan)
-        100 format(1x, /" Test 5 Goodness of Fit Contingency Table"/ &
-                        " ========================================"/ &
-                        " Animal", (1x,10(i8,1x)))
-            write(logfile, 300) (fit_table(orow,i), i=1,nan)
-        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-            write(logfile, 400) (fit_table(erow,i), i=1,nan)
-        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-            write(logfile, 500) (fit_table(oerow,i), i=1,nan)
-        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-            write(logfile, 600) (fit_table(userow,i), i=1,nan)
-        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-        
-            WRITE(logfile,700) fit_chisq, fit_chidf
-        700 FORMAT( " ======================================="// &
-                     " Test 5 GOF Chisq =",F14.5, " on ", F7.0, " df")
-    end if
-    
-end subroutine
-
-
-
-! ----------------------------------------------------------------------------------------------
-
-subroutine t4_gof(nan,ns,p_hat,s_hat, resid_type, fit_table, fit_chisq, fit_chidf, &
-    residuals, cell_expected )
+!!        end if
+!    end do
 !
-!    Purpose: Compute goodness of fit statistic for this model, given estimated p's and s's
-!   for all animals.
+!    ! --- Compute ROC statistic, this is the same as the Mann-Whitney U
+!    roc = 0.D0
+!    do i = 1, n_ones
+!        do j = 1, n_zeros
 !
-!    Input
-!    nan,ns,p_hat,s_hat
+!            if( abs(p_ones(i) - p_zeros(j)) <= near_zero ) then
+!                roc = roc + 0.5D0
+!            else if( p_ones(i) > p_zeros(j) ) then
+!                roc = roc + 1.D0
+!            end if
 !
-!    Output:
-!    fit_chisq (scalar), fit_chidf (scalar), residuals (nan X ns matrix)
-!   fit_table = 3Xns array containing observed, expected, and contribution to Chi square
-
-    use constants
-    use globevars
-    implicit none
-
-    integer, intent(inout) :: nan, ns, resid_type
-    double precision, intent(in), dimension(nan,ns) :: p_hat, s_hat
-
-    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
-    double precision, intent(inout) :: fit_chisq, fit_chidf
-    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
-
-    integer :: i,j,k, end_occasion
-    double precision :: s, ee, se_ee, lee
-
-    residuals = missing
-    fit_table = 0.D0
-    cell_expected=-1.D0
-
-    do i = 1, nan
-        s = 1.D0
-
-        !write(logfile,*) i, ptr_first(i), (ptr_hist(i,k), k=1,ns)
-
-        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't reall need the second condition
-            ! Find last occasion we should compute expected value for.  This is ns if animal
-            ! did not die.  It is occasion with the '2' if animal was death on capture.
-            end_occasion = ns
-            do j = ptr_first(i), ns
-                if( ptr_hist(i,j) >= 2 )then
-                    end_occasion = j
-                    exit
-                end if
-            end do
-
-            ! Compute expected value for each capture indicator between first and end_occasion
-            do j = ptr_first(i), end_occasion
-                   ! Recall that ptr_first(i) is set to first estimable capture probability,
-                   ! which is never 1 and is the first capture occasion AFTER first capture.
-                   ! Note also tht ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
-
-                s = s*s_hat(i,j-1)  ! note last survival is never used
-                ee = s*p_hat(i,j)   ! note first capture probability never used
-
-                ! Save the expected value for the cell
-                cell_expected(i,j) = ee
-
-                ! Error check for the log and sqrt in the residual calc
-                if ((0.D0 <= ee) .and. (ee <= 1.D0)) then
-                    se_ee = sqrt(ee*(1.D0 - ee))
-                else
-                    se_ee = tiny(ee)   ! This will cause the residual to be huge
-                end if
-
-                if (ee <= 0.D0) then
-                    lee = tiny(ee)
-                else if (ee >= 1.D0) then
-                    lee = 1.D0 - tiny(ee)
-                else
-                    lee = ee
-                end if
-
-                fit_table(erow,j) = fit_table(erow,j) + ee  ! note first p_hat is never used
-
-                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
-                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
-
-                if ( ptr_hist(i,j) >= 1 ) then
-                    fit_table(orow,j) = fit_table(orow,j) + 1.D0
-                    if (resid_type == 1) then
-                        residuals(i,j) = sqrt( 2.D0 * abs( log(lee) ))  ! Deviance residual
-                    else
-                        residuals(i,j) = (1.D0 - ee) / se_ee  ! Pearson residual
-                    end if
-                else
-                    if (resid_type == 1) then
-                        residuals(i,j) = -sqrt( 2.D0 * abs( log(1.D0 - lee) ))  ! Deviance residual
-                    else
-                        residuals(i,j) = (0.D0 - ee) / se_ee  ! Pearson residual
-                    end if
-                end if
-
-            end do
-        end if
-    end do
-
-
-    !   Combine cells if needed to prep for the chi square test
-    do j=ns,2,-1
-        if (fit_table(erow,j) < chi_ruleofthumb) then  ! This is the expected value rule-of-thumb cut off
-
-            if ( j > 2 ) then
-                fit_table(erow,j-1) = fit_table(erow,j) + fit_table(erow,j-1)
-                fit_table(orow,j-1) = fit_table(orow,j) + fit_table(orow,j-1)
-                do k = j+1,ns
-                    fit_table(erow,k-1) = fit_table(erow,k)
-                    fit_table(orow,k-1) = fit_table(orow,k)
-                end do
-                fit_table(erow,ns) = -1.D0
-                fit_table(orow,ns) = -1.D0
-            else  ! j == 2
-                if( ns > 2 ) then
-                    fit_table(erow,j) = fit_table(erow,j) + fit_table(erow,j+1)
-                    fit_table(orow,j) = fit_table(orow,j) + fit_table(orow,j+1)
-                    do k = j+1,ns-1
-                        fit_table(erow,k) = fit_table(erow,k+1)
-                        fit_table(orow,k) = fit_table(orow,k+1)
-                    end do
-                    fit_table(erow,ns) = -1.D0
-                    fit_table(orow,ns) = -1.D0
-                else ! ns <= 2
-                    ! do nothing.  df will be < 0
-                end if
-            end if
-        end if
-    end do
-
-
-    ! Compute the chi-square statistic
-    fit_chidf = 0.D0
-    fit_chisq = 0.D0
-    do j=2,ns
-        if (fit_table(erow,j) > 0.D0) then
-            fit_table(userow,j) = 1.D0
-            fit_table(oerow,j) = (fit_table(orow,j) - fit_table(erow,j))*(fit_table(orow,j) - fit_table(erow,j))/fit_table(erow,j)
-            fit_chisq = fit_chisq + fit_table(oerow,j)
-            fit_chidf = fit_chidf + 1.D0
-        else
-            fit_table(userow,j) = 0.D0    ! don't really need these two assignmenst, redundant give initiation above
-            fit_table(oerow,j) = 0.D0
-        end if
-    end do
-
-    if( fit_chidf > 0.D0 ) then
-        fit_chidf = fit_chidf - 1.D0
-    end if
-
-    ! Write table to the log
-    if (trace /= 0) then
-            write(logfile, 100) (j, j=2,ns)
-        100 format(1x, /" Test 4 Goodness of Fit Contingency Table"/ &
-                        " ========================================"/ &
-                        " Occasion",(1x,10(i8,1x)))
-            write(logfile, 300) (fit_table(orow,j), j=2,ns)
-        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-            write(logfile, 400) (fit_table(erow,j), j=2,ns)
-        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-            write(logfile, 500) (fit_table(oerow,j), j=2,ns)
-        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-            write(logfile, 600) (fit_table(userow,j), j=2,ns)
-        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-        
-            WRITE(logfile,700) fit_chisq, fit_chidf
-        700 FORMAT( " ======================================="// &
-                     " Test 4 GOF Chisq =",F14.5, " on ", F7.0, " df")
-    end if 
-
-end subroutine
+!        end do
+!    end do
+!    roc = roc / (n_ones * n_zeros)
+!
+!end subroutine
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine t5_gof(nan, ns, cell_expected, fit_table, fit_chisq, fit_chidf )
+!!
+!!    Purpose: Compute goodness of fit statistic across individuals for the model,
+!!
+!!    Input
+!!    nan,ns,
+!!   cell_expected = nanXns matrix containing cell expected values.  Computed in t4_gof.
+!!       cell_expected < 0 for cells that should not be used.
+!!
+!!    Output:
+!!    fit_chisq (scalar), fit_chidf (scalar)
+!!   fit_table = 3Xnan array containing observed, expected, and contribution to Chi square
+!
+!    use constants
+!    use globevars
+!    implicit none
+!
+!    integer, intent(in) :: nan, ns
+!
+!    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
+!    double precision, intent(in), dimension(nan,ns) :: cell_expected
+!    double precision, intent(inout) :: fit_chisq, fit_chidf
+!    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
+!
+!    integer :: i,j
+!    !double precision :: s, ee, se_ee, lee
+!    double precision :: o, e
+!
+!    fit_table = 0.D0
+!    fit_chidf = 0.D0
+!    fit_chisq = 0.D0
+!    do i = 1, nan
+!
+!        ! This code re-computes the expected value of each cell.  But, already did this
+!        ! in t4_gof, so don't do it again.
+!!        s = 1.D0
+!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
+!!            do j = ptr_first(i), ns
+!               ! Recall that ptr_first(i) is set to first estimable capture probability,
+!                   ! which is never 1 and is the first capture occasion AFTER first capture.
+!                   ! Note also that ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
+!!                s = s*s_hat(i,j-1)  ! note last survival is never used
+!!                ee = s*p_hat(i,j)   ! note first capture probability never used
+!!                fit_table(erow,i) = fit_table(erow,i) + ee  ! note first p_hat is never used
+!                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
+!                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
+!!                if ( ptr_hist(i,j) >= 1 ) then
+!!                    fit_table(orow,i) = fit_table(orow,i) + 1.D0
+!!                end if
+!!            end do
+!
+!        ! Compute sums over occasions
+!        o = 0.D0
+!        e = 0.D0
+!        do j = 1, ns
+!            if( cell_expected(i,j) >= 0 ) then
+!                e = e + cell_expected(i,j)
+!                if( ptr_hist(i,j) >= 1 ) then
+!                    o = o + 1.D0
+!                end if
+!            end if
+!        end do
+!        fit_table(orow,i) = o
+!        fit_table(erow,i) = e
+!        fit_table(oerow,i) = (o - e)*(o - e) / e
+!
+!        ! Compute the chi-square statistic
+!        if (fit_table(erow,i) >= chi_ruleofthumb) then
+!            fit_table(userow,i) = 1.D0
+!            fit_chisq = fit_chisq + fit_table(oerow,i)
+!            fit_chidf = fit_chidf + 1.D0
+!        end if
+!
+!    end do
+!
+!    if( fit_chidf > 0.D0 ) then
+!        fit_chidf = fit_chidf - 1.D0
+!    end if
+!
+!    ! Write table to the log
+!    if (trace /= 0) then
+!            write(logfile, 100) (i, i=1,nan)
+!        100 format(1x, /" Test 5 Goodness of Fit Contingency Table"/ &
+!                        " ========================================"/ &
+!                        " Animal", (1x,10(i8,1x)))
+!            write(logfile, 300) (fit_table(orow,i), i=1,nan)
+!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
+!            write(logfile, 400) (fit_table(erow,i), i=1,nan)
+!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
+!            write(logfile, 500) (fit_table(oerow,i), i=1,nan)
+!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
+!            write(logfile, 600) (fit_table(userow,i), i=1,nan)
+!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
+!        
+!            WRITE(logfile,700) fit_chisq, fit_chidf
+!        700 FORMAT( " ======================================="// &
+!                     " Test 5 GOF Chisq =",F14.5, " on ", F7.0, " df")
+!    end if
+!    
+!end subroutine
+!
+!
+!
+!! ----------------------------------------------------------------------------------------------
+!
+!subroutine t4_gof(nan,ns,p_hat,s_hat, resid_type, fit_table, fit_chisq, fit_chidf, &
+!    residuals, cell_expected )
+!!
+!!    Purpose: Compute goodness of fit statistic for this model, given estimated p's and s's
+!!   for all animals.
+!!
+!!    Input
+!!    nan,ns,p_hat,s_hat
+!!
+!!    Output:
+!!    fit_chisq (scalar), fit_chidf (scalar), residuals (nan X ns matrix)
+!!   fit_table = 3Xns array containing observed, expected, and contribution to Chi square
+!
+!    use constants
+!    use globevars
+!    implicit none
+!
+!    integer, intent(inout) :: nan, ns, resid_type
+!    double precision, intent(in), dimension(nan,ns) :: p_hat, s_hat
+!
+!    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
+!    double precision, intent(inout) :: fit_chisq, fit_chidf
+!    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
+!
+!    integer :: i,j,k, end_occasion
+!    double precision :: s, ee, se_ee, lee
+!
+!    residuals = missing
+!    fit_table = 0.D0
+!    cell_expected=-1.D0
+!
+!    do i = 1, nan
+!        s = 1.D0
+!
+!        !write(logfile,*) i, ptr_first(i), (ptr_hist(i,k), k=1,ns)
+!
+!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't reall need the second condition
+!            ! Find last occasion we should compute expected value for.  This is ns if animal
+!            ! did not die.  It is occasion with the '2' if animal was death on capture.
+!            end_occasion = ns
+!            do j = ptr_first(i), ns
+!                if( ptr_hist(i,j) >= 2 )then
+!                    end_occasion = j
+!                    exit
+!                end if
+!            end do
+!
+!            ! Compute expected value for each capture indicator between first and end_occasion
+!            do j = ptr_first(i), end_occasion
+!                   ! Recall that ptr_first(i) is set to first estimable capture probability,
+!                   ! which is never 1 and is the first capture occasion AFTER first capture.
+!                   ! Note also tht ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
+!
+!                s = s*s_hat(i,j-1)  ! note last survival is never used
+!                ee = s*p_hat(i,j)   ! note first capture probability never used
+!
+!                ! Save the expected value for the cell
+!                cell_expected(i,j) = ee
+!
+!                ! Error check for the log and sqrt in the residual calc
+!                if ((0.D0 <= ee) .and. (ee <= 1.D0)) then
+!                    se_ee = sqrt(ee*(1.D0 - ee))
+!                else
+!                    se_ee = tiny(ee)   ! This will cause the residual to be huge
+!                end if
+!
+!                if (ee <= 0.D0) then
+!                    lee = tiny(ee)
+!                else if (ee >= 1.D0) then
+!                    lee = 1.D0 - tiny(ee)
+!                else
+!                    lee = ee
+!                end if
+!
+!                fit_table(erow,j) = fit_table(erow,j) + ee  ! note first p_hat is never used
+!
+!                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
+!                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
+!
+!                if ( ptr_hist(i,j) >= 1 ) then
+!                    fit_table(orow,j) = fit_table(orow,j) + 1.D0
+!                    if (resid_type == 1) then
+!                        residuals(i,j) = sqrt( 2.D0 * abs( log(lee) ))  ! Deviance residual
+!                    else
+!                        residuals(i,j) = (1.D0 - ee) / se_ee  ! Pearson residual
+!                    end if
+!                else
+!                    if (resid_type == 1) then
+!                        residuals(i,j) = -sqrt( 2.D0 * abs( log(1.D0 - lee) ))  ! Deviance residual
+!                    else
+!                        residuals(i,j) = (0.D0 - ee) / se_ee  ! Pearson residual
+!                    end if
+!                end if
+!
+!            end do
+!        end if
+!    end do
+!
+!
+!    !   Combine cells if needed to prep for the chi square test
+!    do j=ns,2,-1
+!        if (fit_table(erow,j) < chi_ruleofthumb) then  ! This is the expected value rule-of-thumb cut off
+!
+!            if ( j > 2 ) then
+!                fit_table(erow,j-1) = fit_table(erow,j) + fit_table(erow,j-1)
+!                fit_table(orow,j-1) = fit_table(orow,j) + fit_table(orow,j-1)
+!                do k = j+1,ns
+!                    fit_table(erow,k-1) = fit_table(erow,k)
+!                    fit_table(orow,k-1) = fit_table(orow,k)
+!                end do
+!                fit_table(erow,ns) = -1.D0
+!                fit_table(orow,ns) = -1.D0
+!            else  ! j == 2
+!                if( ns > 2 ) then
+!                    fit_table(erow,j) = fit_table(erow,j) + fit_table(erow,j+1)
+!                    fit_table(orow,j) = fit_table(orow,j) + fit_table(orow,j+1)
+!                    do k = j+1,ns-1
+!                        fit_table(erow,k) = fit_table(erow,k+1)
+!                        fit_table(orow,k) = fit_table(orow,k+1)
+!                    end do
+!                    fit_table(erow,ns) = -1.D0
+!                    fit_table(orow,ns) = -1.D0
+!                else ! ns <= 2
+!                    ! do nothing.  df will be < 0
+!                end if
+!            end if
+!        end if
+!    end do
+!
+!
+!    ! Compute the chi-square statistic
+!    fit_chidf = 0.D0
+!    fit_chisq = 0.D0
+!    do j=2,ns
+!        if (fit_table(erow,j) > 0.D0) then
+!            fit_table(userow,j) = 1.D0
+!            fit_table(oerow,j) = (fit_table(orow,j) - fit_table(erow,j))*(fit_table(orow,j) - fit_table(erow,j))/fit_table(erow,j)
+!            fit_chisq = fit_chisq + fit_table(oerow,j)
+!            fit_chidf = fit_chidf + 1.D0
+!        else
+!            fit_table(userow,j) = 0.D0    ! don't really need these two assignmenst, redundant give initiation above
+!            fit_table(oerow,j) = 0.D0
+!        end if
+!    end do
+!
+!    if( fit_chidf > 0.D0 ) then
+!        fit_chidf = fit_chidf - 1.D0
+!    end if
+!
+!    ! Write table to the log
+!    if (trace /= 0) then
+!            write(logfile, 100) (j, j=2,ns)
+!        100 format(1x, /" Test 4 Goodness of Fit Contingency Table"/ &
+!                        " ========================================"/ &
+!                        " Occasion",(1x,10(i8,1x)))
+!            write(logfile, 300) (fit_table(orow,j), j=2,ns)
+!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
+!            write(logfile, 400) (fit_table(erow,j), j=2,ns)
+!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
+!            write(logfile, 500) (fit_table(oerow,j), j=2,ns)
+!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
+!            write(logfile, 600) (fit_table(userow,j), j=2,ns)
+!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
+!        
+!            WRITE(logfile,700) fit_chisq, fit_chidf
+!        700 FORMAT( " ======================================="// &
+!                     " Test 4 GOF Chisq =",F14.5, " on ", F7.0, " df")
+!    end if 
+!
+!end subroutine
 
 
 ! ----------------------------------------------------------------------------------------------
@@ -4130,6 +4110,12 @@ integer function matrank( x, m, n )
     a = x
     call svdcmp_dp(a, s_vals, v, m, n)
 
+    !   Check for convergence
+    if ( s_vals(1) <= -9 ) then
+        matrank = 0
+        return
+    end if
+
     if (trace /= 0) then 
         write(logfile,*)
         write(logfile,*) " ----- Singular values of Hessian matrix -----"
@@ -4169,7 +4155,7 @@ SUBROUTINE svdcmp_dp(a,w,v,m,n)
 !       values W is stored in w as a vector of size N.  The NxN matrix V is output as v.
 !
     !use constants, only : DP, I4B
-    USE nrutil, ONLY : assert_eq,nrerror,outerprod
+    USE nrutil, ONLY : outerprod
     USE nr, ONLY : pythag
     IMPLICIT NONE
     double precision, DIMENSION(m,n), INTENT(INOUT) :: a
@@ -4283,7 +4269,11 @@ SUBROUTINE svdcmp_dp(a,w,v,m,n)
                 end if
                 exit
             end if
-            if (its == 30) call nrerror('svdcmp_dp: no convergence in svdcmp')
+            if (its == 30) then
+                !call nrerror('svdcmp_dp: no convergence in svdcmp')
+                w(1) = -999
+                return
+            end if
             x=w(l)
             nm=k-1
             y=w(nm)

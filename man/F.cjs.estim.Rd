@@ -106,16 +106,20 @@ c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, link="logit"
     of population size. Default 95\% confidence.}
   \item{link}{The link function to be used.  The link function converts linear predictors in the 
     range (-infinity, infinity) to probabilities in the range (0,1).  Valid values for the link 
-    function are "logit" (default), "sine", and "hazard".  
+    function are "logit" (default), "sine", and "hazard".  (see Examples for a plot of the link functions)
      \itemize{
         \item The "logit" link is \eqn{\eta = log( \frac{p}{1 - p} )}{eta = log( p / (1 - p) )} with 
             inverse \eqn{p = \frac{1}{1 + exp(-\eta)}}{p = 1 / (1 + exp(-eta))}.  
-        \item The "sine" link is \eqn{\eta = \frac{100asin( 2p - 1 )}{\pi}}{eta = 100*asin( 2*p - 1 ) / pi }, which ranges from -100 to 100. 
-            The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/100 )}{2}}{p = 0.5*(1 + sin( eta*pi/100 ))} for 
+        \item The "sine" link is \eqn{\eta = \frac{8asin( 2p - 1 )}{\pi}}{eta = 8*asin( 2*p - 1 ) / pi }, which ranges from -4 to 4. 
+            The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/8 )}{2}}{p = 0.5*(1 + sin( eta*pi/8 ))} for 
             values of \eqn{\eta}{eta} between 
-            -100 and 100.  For values of \eqn{\eta}{eta} < -100, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 100, \eqn{p} = 1.
-        \item The "hazard" link is \eqn{\eta = 20log( -log( 1 - p ))}{eta = 20*log( -log( 1 - p ))}, with inverse 
-        \eqn{1 - exp( -exp( \frac{\eta}{20} ))}{1 - exp( -exp( eta/20 ))}.
+            -4 and 4.  For values of \eqn{\eta}{eta} < -4, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 4, \eqn{p} = 1.
+            Scaling of the sine link was choosen to yield coefficients roughly the 
+            same magnitude as the logit link.
+        \item The "hazard" link is \eqn{\eta = log( -log( 1 - p ))}{eta = log( -log( 1 - p ))}, with inverse 
+        \eqn{1 - exp( -exp( \eta ))}{1 - exp( -exp( eta ))}.  The value of \eqn{p} from the inverse hazard 
+            link approaches 0 as \eqn{\eta}{eta} decreases.  For values of \eqn{\eta}{eta} > 3, \eqn{p} = 1 
+            for all intents and purposes. 
      }
     } 
   \item{control}{A list containing named control parameters for the minimization and estimation process. 
@@ -350,6 +354,7 @@ McDonald, T. L., and S. C. Amstrup. 2001. Estimation of population size using
 
 %\donttest{
 
+
 ## Fit CJS model to dipper data, time-varying capture and survivals.
 ## Method 1 : using factors
 data(dipper.histories)
@@ -373,6 +378,20 @@ x3.a <- x3
 x3.a[,ncol(dipper.histories)] <- 999
 dipper.cjs2 <- F.cjs.estim( ~x3+x4+x5+x6+x7, ~x2+x3.a+x4+x5, dipper.histories )
 # compare dipper.cjs2 to dipper.cjs
+
+
+## A plot to compare the link functions
+sine.link <- function(eta){ ifelse( eta < -4, 0, ifelse( eta > 4, 1, .5*(1+sin(eta*pi/8)))) }
+eta <- seq(-5,5, length=40)
+p1 <- 1 / (1 + exp(-eta))
+p2 <- sine.link(eta)
+p3 <- 1.0 - exp( -exp( eta ))
+plot(eta, p1, type="l" )
+lines(eta, p2, col="red" )
+lines(eta, p3, col="blue" )
+legend( "topleft", legend=c("logit", "sine", "hazard"), col=c("black", "red", "blue"), lty=1)
+
+
 
 %}
 

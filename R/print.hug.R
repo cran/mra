@@ -77,7 +77,7 @@ cat(paste("Individuals observed: ", round(x$num.caught), "\n", sep=""))
 cat(paste("Effective sample size: ", round(x$n.effective), "\n", sep=""))
 
 
-cat(paste("\nMessage =", x$message ))
+cat(paste("\nMessage = ", x$message[2] ))
 cat(paste("\nNumber of estimable coefficients (estimated) = ", x$df))
 cat(paste("\nLog likelihood = ", x$loglike))
 cat(paste("\nDeviance = ", x$dev))

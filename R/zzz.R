@@ -1,6 +1,10 @@
-.First.lib<-function(libname, pkgname){
+.onAttach<-function(libname, pkgname){
 
-	library.dynam("mra", pkgname)
+	#library.dynam("mra", pkgname, libname)  # deprecated
+    #v <- packageDescription("mra", fields="Version")  # this requires utils package, and I don't want to make mra dependent on utils, just for this.
 
-	cat(paste( "Mark-Recapture Analysis.", "\n\nTrent McDonald, WEST Inc.\n(tmcdonald@west-inc.com, www.west-inc.com)\n") )
+    packageStartupMessage( "Mark-Recapture Analysis (vers 2.9)" )  # You have to change this every version
+	packageStartupMessage("\nTrent McDonald, WEST Inc.\n(tmcdonald@west-inc.com, www.west-inc.com)") 
 }
+
+

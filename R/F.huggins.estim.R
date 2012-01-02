@@ -1,5 +1,5 @@
 F.huggins.estim <- function(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
-    nhat.v.meth=1, df=NA, control=mra.control()){
+    nhat.v.meth=1, df=NA, link="logit", control=mra.control()){
 
 start.sec <- proc.time()[3]
 
@@ -90,6 +90,18 @@ if( is.na(df) ){
     df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
 }
 
+#   Re-code the link specification to integers
+if( link=="logit" ){
+    link.code <- 1
+} else if( link == "sine" ){
+    link.code <- 2
+} else if( link == "hazard" ){
+    link.code <- 3
+} else {
+    stop("Unknown link function specified.")
+}
+
+
 if( control$trace ) cat( "Calling MRA DLL to maximize likelihood.  Please wait...\n")
 
 ans <- .Fortran( "hugginsmodel", 
@@ -98,7 +110,7 @@ ans <- .Fortran( "hugginsmodel",
         nx          = as.integer(nx), 
         ny          = as.integer(ny),
         histories   = as.integer(histories),  
-        remove.vac  = as.integer(remove.vec),
+        remove.vec  = as.integer(remove.vec),
         algorithm   = as.integer(control$algorithm), 
         cov.meth    = as.integer(control$cov.meth), 
         nhat.v.meth = as.integer(nhat.v.meth), 
@@ -107,6 +119,7 @@ ans <- .Fortran( "hugginsmodel",
         cap.init    = as.double(cap.init),
         recap.init  = as.double(recap.init), 
         trace       = as.integer(control$trace),
+        link        = as.integer(link.code),
         maxfn       = as.integer(control$maxfn),
         tol         = as.double(control$tol),
         loglik      = as.double(loglik), 
@@ -129,7 +142,6 @@ ans <- .Fortran( "hugginsmodel",
         PACKAGE="mra" )
 
 if(control$trace) cat(paste("Returned from MRA. Details in MRA.LOG.\n", sep=""))
-
 
 # ----- Fortran sets missing standard errors < 0. Reset missing standard errors to NA.
 ans$se.param[ ans$se.param < 0 ] <- NA
@@ -182,8 +194,8 @@ if(ans$cov.code == 0){
 }
 
 # ----- Remove trailing blanks from message
-message <- paste(c( alg.mess, exit.mess, cov.mess), "\n")
-if( control$trace ) cat(paste( "\t(", message, ")\n", sep="" ))
+message <- c( alg.mess, exit.mess, cov.mess)
+if( control$trace ) cat(paste("\t(", message, ")\n", sep=""))
 
 # ----- Wipe out the first recapture probability.  Can't have recapture in first period.
 ans$c.hat[,1] <- NA

@@ -17,7 +17,7 @@
 
 \usage{
 F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, recap.init,
-    nhat.v.meth=1, df=NA, control=mra.control())
+    nhat.v.meth=1, df=NA, link="logit", control=mra.control())
 }
 
 
@@ -80,6 +80,25 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     set to NX+NY = the number of estimated coefficients. Otherwise, if \code{df} > 0, 
     the supplied value is used.  Only AIC, QAIC, AICc, and QAICc are dependent on 
     this value (in their penalty terms). }
+  \item{link}{The link function to be used.  The link function converts linear predictors in the 
+    range (-infinity, infinity) to probabilities in the range (0,1).  Valid values for the link 
+    function are "logit" (default), "sine", and "hazard".  (see Examples in help for \code{\link{F.cjs.estim}} 
+    for a plot of the link functions)
+     \itemize{
+        \item The "logit" link is \eqn{\eta = log( \frac{p}{1 - p} )}{eta = log( p / (1 - p) )} with 
+            inverse \eqn{p = \frac{1}{1 + exp(-\eta)}}{p = 1 / (1 + exp(-eta))}.  
+        \item The "sine" link is \eqn{\eta = \frac{8asin( 2p - 1 )}{\pi}}{eta = 8*asin( 2*p - 1 ) / pi }, which ranges from -4 to 4. 
+            The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/8 )}{2}}{p = 0.5*(1 + sin( eta*pi/8 ))} for 
+            values of \eqn{\eta}{eta} between 
+            -4 and 4.  For values of \eqn{\eta}{eta} < -4, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 4, \eqn{p} = 1.
+            Scaling of the sine link was choosen to yield coefficients roughly the 
+            same magnitude as the logit link.
+        \item The "hazard" link is \eqn{\eta = log( -log( 1 - p ))}{eta = log( -log( 1 - p ))}, with inverse 
+        \eqn{1 - exp( -exp( \eta ))}{1 - exp( -exp( eta ))}.  The value of \eqn{p} from the inverse hazard 
+            link approaches 0 as \eqn{\eta}{eta} decreases.  For values of \eqn{\eta}{eta} > 3, \eqn{p} = 1 
+            for all intents and purposes. 
+     }
+    }     
   \item{control}{A list containing named control parameters for the minimization and estimation process. 
     Control parameters include number of iterations, covariance estimation method, etc.  
     Although the default values work in the vast majority of cases, changes to these 
@@ -157,9 +176,10 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     vectors, and 1-d factors can be specified in the capture and recapture
     models.  
     
-    A log file, named \code{mra.log}, is written to the current directory.  
-    This file contains additional details in a semi-friendly 
-    format.  CAREFUL: This file is overwritten each run. 
+    If argument \code{trace} in a call to \code{mra.control} is set to something 
+    other than 0, a log file named \code{mra.log} is written to the current directory.  
+    See \code{\link{mra.control}} for actions associated with values of \code{trace}.
+    CAREFUL: \code{mra.log} is overwritten each run. 
     
     Values in 2-d Matrix Covariates: Even though covariate 
     matrices are required to be NAN x NS (same size as capture histories), 
@@ -306,8 +326,12 @@ hug.th <- F.huggins.estim( ~ivar(sex)+tvar(ct), NULL, ch.mat )
 # Individual, time, and behavoral effects (model M(tbh))
 hug.tbh <- F.huggins.estim( ~ivar(sex)+tvar(ct), ~1, ch.mat )
 
-# Time varying initial captures, but recaptures only depend on sex.
-hug.custom <- F.huggins.estim( ~tvar(ct), ~ivar(sex), ch.mat, remove=TRUE )
+# Time varying initial captures, recaptures are constant and depend on sex.
+hug.custom1 <- F.huggins.estim( ~tvar(ct), ~ivar(sex), ch.mat, remove=TRUE )
+
+# Compare hug.custom1 to the following: Time varying initial captures with 
+# time varying recaptures that depend on sex.
+hug.custom2 <- F.huggins.estim( ~tvar(ct), ~ivar(sex), ch.mat, remove=FALSE )
 
 # Values in first column of recapture covariates do not matter. 
 # Below, mod.1 and mod.2 are identical.

@@ -1,4 +1,4 @@
-F.cjs.simulate <- function( super.p, super.s, fit, N1=1000, birth.rate="constant.popln", R=100 ){
+F.cjs.simulate <- function( super.p, super.s, fit, N1=1000, births.per.indiv="constant.popln", R=100 ){
 
 #   Generate R capture history matricies that follow the model in fit.
 
@@ -31,13 +31,13 @@ if( missing(super.p) | missing(super.s) ){
     }
 }
 
-if( length(birth.rate) != ncol(super.s) & (birth.rate[1] != "constant.popln") ){
-    stop(paste("birth.rate vector must equal 'constant.popln', or length must equal", ncol(super.s)))
-} 
+if( length(births.per.indiv) != ncol(super.s) & (births.per.indiv[1] != "constant.popln") ){
+    stop(paste("births.per.indiv vector must equal 'constant.popln', or length must equal", ncol(super.s)))
+}
 
 # Keeping nrows of super.p and super.s separate allows super p and super s to have different number of rows
 N.super.p <- nrow(super.p)
-N.super.s <- nrow(super.s)  
+N.super.s <- nrow(super.s)
 ns <- ncol(super.p)
 
 #   Allocate space for answer
@@ -64,20 +64,20 @@ for( k in 1:R ){
         popln <- cbind( popln, survived )
         hists <- cbind( hists, captured )
 
-        if( birth.rate[1] == "constant.popln" ){
+        if( births.per.indiv[1] == "constant.popln" ){
             births <- N1 - sum(survived)
         } else {
-            # birth.rate is a vector of rates.  Multiply by current number in population
-            births <- round(sum(survived) * birth.rate[j-1])
+            # births.per.indiv is a vector of rates.  Multiply by current number in population
+            births <- round(sum(survived) * births.per.indiv[j-1])
         }
-        
+
         if( births > 0 ){
             new.popln <- new.caps <- matrix(0, births, ncol(popln))    # ncol(popln) should equal j here
             new.popln[,j] <- 1
 
             super.samp <- sample(1:N.super.p, births, replace=TRUE)
             new.p <- matrix(super.p[super.samp,], births, ns)   # need the matrix(...) because births can = 1, in which case new.p would be vector and only 1 dimension.
-            new.caps[,j] <- rbinom( births, 1, new.p[,j] ) 
+            new.caps[,j] <- rbinom( births, 1, new.p[,j] )
             popln <- rbind(popln, new.popln)
             hists <- rbind(hists, new.caps)
             p <- rbind(p, new.p)
@@ -90,14 +90,13 @@ for( k in 1:R ){
     labs <- paste( "t", 1:ns, sep="" )
     dimnames( hists ) <- list(NULL, labs)
     dimnames( popln ) <- list(NULL, labs)
-    
+
     #   Remove animals that were never captured
     hists <- hists[ rowSums(hists) > 0, ]
-    
+
     #   Wrap it up
     sim.hists[[k]] <- list(hists=hists, popln.n=colSums(popln))
 }
 
 sim.hists
 }
-
