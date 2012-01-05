@@ -936,7 +936,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         case (:1, 3:)
 
             ! The algorithm used by Mark
-            !call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, max_fn, trace, exit_code)
+            call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, max_fn, trace, exit_code)
 
         case (2)
 

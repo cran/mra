@@ -1,4 +1,4 @@
-cf524c683a75cab532c01cc7f79c3e9a *DESCRIPTION
+74f28bd2e9748549e12dfdf9e57fc110 *DESCRIPTION
 a024baa72c3337f38a144789558dd0e7 *NAMESPACE
 b5b908751c33c6a649a40cd4191c2060 *R/F.3d.model.matrix.r
 bf6a923338cf040d1b3c6d6d19ca2933 *R/F.cjs.covars.R
@@ -21,7 +21,7 @@ a3ca74b08fdb74355c8bdf1ad7577a58 *R/print.hug.R
 f60ff228a34795f2945315f7447750ea *R/print.nhat.R
 5c43ab6d4e285865ec475303b344686a *R/residuals.cjs.R
 33506957033af623011501fe75afaa4b *R/tvar.r
-74d1047462750085b1be30c6949c176b *R/zzz.R
+b21ba4327e35d779b27200133f10d46a *R/zzz.R
 595a672c876f7daf4536e53269a4aaa5 *data/dipper.data.rda
 986a62287aa7c4890e2ec05285a94b95 *data/dipper.histories.rda
 44cab3f2a3d380c96322927bee96de2f *data/dipper.males.rda
@@ -49,4 +49,4 @@ dc798bc36bc7659a53e13655fa69763a *man/print.hug.Rd
 957fe0d406a3dfb5a56f62df201d7fcc *man/print.nhat.Rd
 6400b2c3d82a720419ac778cd0ef9984 *man/residuals.cjs.Rd
 6bac9c09a434ef23cfbf63f60792b0f1 *man/tvar.Rd
-c16e0481c438e13d6f5e22cbf6ab602a *src/Mrawin.f90
+1144093a178ae37841e90adf91a64e3d *src/Mrawin.f90
