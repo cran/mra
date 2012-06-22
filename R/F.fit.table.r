@@ -1,4 +1,4 @@
-F.fit.table <- function( fits=ls(pat="^fit"), rank.by= "qaicc" ){
+F.fit.table <- function( fits=ls(pattern="^fit"), rank.by= "qaicc" ){
 #
 #	Compile a table of fit statistics for estimated models. 
 #

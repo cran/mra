@@ -13,7 +13,7 @@
 }
 
 \usage{
-F.fit.table( fits=ls(pat="^fit"), rank.by= "qaicc" )
+F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc" )
 }
 
 %- maybe also 'usage' for other objects documented here.

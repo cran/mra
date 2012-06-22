@@ -6,13 +6,14 @@
   Print the estimates of N from a CJS object in a nice format.
 }
 \usage{ 
-\method{print}{nhat}(x, ...)
+\method{print}{nhat}(x, width=10, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{ an object of class "cjs".  This class of object is 
-              output from F.cjs.estim(). }
-  \item{...}{ Arguments to other functions called by this one. Currently no other 
+  \item{x}{An object of class "nhat", which inherits from class "cr".  This class of object is 
+              output from \code{F.cr.model.avg}. }
+  \item{width}{The minimum width of columns in the table printed by this routine.} 
+  \item{...}{Arguments to other functions called by this one. Currently no other 
 		functions are called, so this is not used, but must be here 
 		for compatability with the generic \code{print} function.
 	    }
