@@ -290,8 +290,8 @@ Amstrup, S. C., T. L. McDonald, and B. F. J. Manly (editors). 2005. Handbook of
 
 \examples{
 
-\donttest{
 # Fake the data for these examples
+set.seed(3425)
 ch.mat <- matrix( round(runif(30*5)), nrow=30, ncol=5)
 ch.mat <- ch.mat[ apply(ch.mat,1,sum) > 0, ]  # no zero rows allowed
 ct <- as.factor(1:ncol(ch.mat))
@@ -340,7 +340,6 @@ mod.2 <- F.huggins.estim( ~tvar(ct), ~tvar( c(-9,1,2,3,4), nrow(ch.mat)), ch.mat
 
 
 
-}
 
 }
 \keyword{ survival }% at least one, from doc/KEYWORDS

@@ -13,7 +13,7 @@
 }
 
 \usage{
-F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc" )
+F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc", plausible.p=0.01 )
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -28,6 +28,13 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc" )
   \item{rank.by}{A string (scalar) naming the model fit statistic to include
     in the summary table.  The resulting table is sorted by this statistic. Possible values 
     are: "qaicc" (the default), and "aicc".}
+  \item{plausible.p}{A scalar specifying the cut-point in \code{rank.by} weight to use during 
+    determination of 'plausible' models. A model is defined to be 'plausible' if it has \code{rank.by} 
+    weight greater than \code{plausible.p} OR if 
+    the model's log-likelihood is greater than the minimum log likelihood amoungst those that 
+    have \code{rank.by} weight greater than \code{plausible.p}.  See explanation of \code{plausible} 
+    in Value section below.    
+  }
 }
 
 \details{
@@ -56,6 +63,7 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc" )
   \item{n.coefficients}{Number of coefficients in the model.  This is length of the coefficient 
     vector without regard to estimability.  If \code{n.coefficients} > \code{n.est.parameters}, 
     the model is not full rank, and at least one coefficient is probably not estimable.}
+  \item{loglike}{value of the log likelihood evaluated at the maximum likelihood parameters.}  
   \item{aicc}{AIC of the model including the small sample correction = 
     AIC + (2*\code{df}*(\code{df}+1)) / (\code{nan} - \code{df} - 1)}
   \item{delta.aicc}{Difference between AICc for the model and the minimum AICc in the table.}  
@@ -64,19 +72,29 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc" )
     QAIC + (2*\code{df}*(\code{df}+1))/(\code{nan} - \code{df} - 1)}
   \item{delta.qaicc}{Difference between QAICc for the model and the minimum QAICc in the table.}
   \item{qaicc.wgt}{QAICc model weights.  These weights equal exp(-.5*(delta.qaicc)), scaled to sum to 1.0,}
+  \item{plausible}{Indicates `plausible' models as defined by Bromaghen et al. (2013).  The value 
+    in this column is TRUE if the model has \code{rank.by} weight greater than \code{plausible.p} OR if 
+    the model's log-likelihood is greater than the minimum log likelihood amoungst those that 
+    have \code{rank.by} weight greater than \code{plausible.p}. The second condition in this scheme includes a model structure as 'plausible' 
+    when its log-likelihood is relatively high but it has been heavily penalized by the number of parameters.  When 
+    the likelihood is parameterized to contain two or more linear models, this second condition is a reasonable 
+    criterion when model selection is done in a step-wise fashion on each model separately (see Bromaghen et al., 2013). 
+    }
 
 }
 
-
+\references{ Bromaghin, J.F., McDonald, T. L., and Amstrup, S. C., (2013) "Plausible Combinations: An 
+    improved methods to evaluate the covariate structure of Cormack-Jolly-Seber mark-recapture models", 
+    Open Journal of Ecology, v.3, p. 11-22.  (included in vignettes)
+}
 
 \author{ Trent McDonald, WEST-INC, tmcdonald@west-inc.com }
 
 
-\seealso{ \code{\link{F.cjs.estim}}, \code{\link{F.huggins.estim}} }
+\seealso{ \code{\link{F.cjs.estim}}, \code{\link{F.huggins.estim}}, \code{vignette("Bromaghin_etal_2013_OJE")} }
 
 \examples{
 
-\donttest{
 ## Fit several CJS model to dipper data. Summarize fits.
 
 ## Time varying survival and capture (true CJS model)
@@ -87,7 +105,8 @@ dipr.01 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(ct,drop=c(1,6,7)), dipper.h
 
 ## Linear trend in survival
 cT <- 1:ncol(dipper.histories)
-dipr.02 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(cT, nan=nrow(dipper.histories)), dipper.histories )
+dipr.02 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(cT, nan=nrow(dipper.histories)), 
+  dipper.histories )
 
 ## No trend in survival
 dipr.03 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~1, dipper.histories )
@@ -95,7 +114,6 @@ dipr.03 <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~1, dipper.histories )
 ## Summary table
 F.fit.table( ls(pat="^dipr") )
 
-}
 
 }
 

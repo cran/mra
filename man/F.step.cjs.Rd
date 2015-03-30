@@ -10,7 +10,8 @@ and probability of capture models.
 
 
 \usage{
-F.step.cjs(cap.covars, surv.covars, fit.crit = "qaicc", signif.drop = 0, signif.increase = 0, plot = TRUE, ...)
+F.step.cjs(cap.covars, surv.covars, fit.crit = "qaicc", signif.drop = 0, 
+  signif.increase = 0, plot = TRUE, ...)
 }
 
 
@@ -144,7 +145,9 @@ nan <- nrow(ch)
 small.t <- as.factor( paste("T",1:ns, sep=""))
 post.flood <- as.numeric( 1:ns >= 4 )
 year <- 1:ns - (ns / 2)
-males.postflood <- males %*% post.flood   # individual and time varying
+males.postflood <- outer( c(males), post.flood ) # individual and time varying
+
+print(dim(males.postflood))
 
 #   Attach attributes to covariates.  For convienence only.
 attr(small.t, "nan") <- nan
@@ -155,12 +158,13 @@ attr(males, "ns") <- ns
 
 #   Define pool of variables to be considered in each model
 cap.vars <- c("tvar(small.t)","tvar(year)")
-surv.vars <- c("tvar(small.t)","tvar(year)", "tvar(post.flood)", "ivar(males)", "males.postflood")
+surv.vars <- c("tvar(small.t)","tvar(year)", "tvar(post.flood)", "ivar(males)",
+  "males.postflood")
 
-\donttest{
 #   Do stepwise selection
-final.fit <- F.step.cjs( cap.vars, surv.vars, histories=ch, control=mra.control(maxfn=500, cov.meth=2) )
-}
+final.fit <- F.step.cjs( cap.vars, surv.vars, histories=ch, 
+  control=mra.control(maxfn=500, cov.meth=2) )
+
 
 }
 

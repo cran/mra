@@ -16,7 +16,8 @@ simulated.  Closed populations can also be simulated.
 }
 
 \usage{
-F.cjs.simulate(super.p, super.s, fit, N1 = 1000, births.per.indiv = "constant.popln", R = 100)
+F.cjs.simulate(super.p, super.s, fit, N1 = 1000, 
+  births.per.indiv = "constant.popln", R = 100)
 }
 
 \arguments{
@@ -141,14 +142,16 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000, births.per.indiv = "constant.po
 
 \examples{
 
-\donttest{  
-## Careful: These examples can take a long time to run. 
+\dontrun{
+
+## Don't run specified because these examples can take > 10 seconds. 
 
 ## Simulate constant model, and analyze
 
+
 ns <- 10
 N <- 100
-sim.list <- F.cjs.simulate( rep(0.3,ns), rep(0.9,ns-1), N1=N, R=100 )  # should do at least R = 500, but takes a while...
+sim.list <- F.cjs.simulate( rep(0.3,ns), rep(0.9,ns-1), N1=N, R=100 )
 
 f.analyze <- function(x){
     fit <- F.cjs.estim( ~1, ~1, x$hists, control=mra.control(maxfn=200, cov.meth=2) )
@@ -159,7 +162,8 @@ f.analyze <- function(x){
     }
 }
 results <- t(sapply(sim.list, f.analyze))
-plot( 1:10, colMeans(results, na.rm=TRUE), xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
+plot( 1:10, colMeans(results, na.rm=TRUE), xlab="Occasion", 
+  ylab="Mean population estimate", col="red", type="b")
 abline( h=N )
 
 ## Plot RMSE by occasion
@@ -174,7 +178,8 @@ title(main="RMSE by Sample Occasion")
 sim.list <- F.cjs.simulate( matrix(c(0.3,.7,.7,.7),4,ns), rep(0.9,ns-1), N1=N, R=100 ) 
 results <- t(sapply(sim.list, f.analyze))
 mean.N <- colMeans(results, na.rm=TRUE)
-plot( 1:length(mean.N), mean.N, ylim=range(c(mean.N,N),na.rm=TRUE), xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
+plot( 1:length(mean.N), mean.N, ylim=range(c(mean.N,N),na.rm=TRUE), 
+  xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
 abline( h=N )
 abline( h=mean(mean.N), col="red", lty=2)
 title(main="Heterogeniety causes negative bias")
@@ -198,7 +203,8 @@ f.analyze <- function(x){
     assign("i",i,env=.GlobalEnv)
     
     ct <- as.factor( 1:ncol(x$hists) )
-    fit <- F.cjs.estim( ~tvar(ct,nan=nrow(x$hists),drop=c(1,2)), ~tvar(ct,nan=nrow(x$hists),drop=c(1,6,7)), 
+    fit <- F.cjs.estim( ~tvar(ct,nan=nrow(x$hists),drop=c(1,2)), 
+        ~tvar(ct,nan=nrow(x$hists),drop=c(1,6,7)), 
         x$hists, control=mra.control(maxfn=200, cov.meth=2) )
     if( fit$exit.code == 1 ){
         return( fit$n.hat )
@@ -209,7 +215,8 @@ f.analyze <- function(x){
 i <- 0
 results <- t(sapply(sim.list, f.analyze))
 mean.N <- colMeans(results, na.rm=TRUE)
-plot( 1:length(mean.N), mean.N, ylim=range(c(mean.N,N),na.rm=TRUE), xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
+plot( 1:length(mean.N), mean.N, ylim=range(c(mean.N,N),na.rm=TRUE), 
+  xlab="Occasion", ylab="Mean population estimate", col="red", type="b")
 abline( h=N )
 title(main="Time varying CJS model")
 }

@@ -41,11 +41,9 @@ appear in the initial capture model.
 \seealso{ \code{\link{F.huggins.estim}} }
 \examples{ 
 
-\donttest{
 data(dipper.histories)
-dipper.fit <- F.huggins.estim( ~1, ~1, dipper.histories )
+dipper.fit <- F.huggins.estim( ~1, histories= dipper.histories )
 print(dipper.fit)
-}
 
  }
 \keyword{ models }

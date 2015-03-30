@@ -93,7 +93,8 @@ maxfn <- control$maxfn
 if( is.na(df) ){
     df.estimated <- 1  # Have MRAWIN estimate rank of var-covar matrix
 } else {
-    df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
+    #df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
+    df.estimated <- 1  #  Have MRAWIN estimate number of parameters.  Work out the one the user wants later
 }
 
 
@@ -320,6 +321,7 @@ ans <- list( histories=histories,
     s.hat=ans$s.hat, 
     se.s.hat=ans$se.s.hat, 
     df=df, 
+    df.estimated=ans$df.estimated,
     control=control,
     message=c(alg.mess,exit.mess,cov.mess), 
     exit.code=ans$exit.code, 

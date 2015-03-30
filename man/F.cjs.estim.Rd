@@ -11,13 +11,14 @@
 \description{
    Estimates Cormack-Jolly-Seber (CJS) capture-recapture models with individual, time, and
 	individual-time varying covariates using the "regression" parametrization of 
-	Amstrup et al (2006, Ch 9). For live recaptures only. Losses on capture allowed.
+	Amstrup et al (2005, Ch 9). For live recaptures only. Losses on capture allowed.
 	Uses a logistic link function to relate probability of capture and survival 
 	to external covariates.  
 }
 \usage{
 F.cjs.estim(capture, survival, histories, cap.init, sur.init, group,  nhat.v.meth = 1, 
-c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, link="logit", control=mra.control())
+c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, 
+link="logit", control=mra.control())
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -136,9 +137,9 @@ c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, link="logit"
 	and perform goodness-of-fit tests.  Horvitz-Thompson-type population size estimates 
 	are also computed by default. 
   
-	A log file, named \code{mra.log}, is written to the current directory.  This file contains
+	If \code{control=mra.control(trace=1)}, a log file, named \code{mra.log}, is written to the current directory.  This file contains
      	additional details, such as individual Test 2 and Test 3 components, in a semi-friendly 
-     	format.  This file is overwritten each run. 
+     	format.  This file is overwritten each run.  See \code{help(mra.control)} for more details. 
 
     \bold{Model Specification:} Both the \code{capture} and \code{survival} model can be 
     specified as any combination of 2-d matrices (time and individual varying covariates), 
@@ -270,9 +271,13 @@ c.hat = -1, df = NA, intervals=rep(1,ncol(histories)-1), conf=0.95, link="logit"
 	column corresponding to survival between occasion NS and NS+1 is NA.}
   \item{se.s.hat}{Matrix of standard errors for estimated survival probabilities. 
 	Size NAN X NS.  Last column is NA.}
-  \item{df}{Number of estimable parameters in the model. df is either the estimated number of independent 
-	parameters (by default) based on rank of the variance matrix, 
-	or NX+NY, or a specified value, depending on the input value of DF parameter.} 
+  \item{df}{The number of parameters assumed in the model.  This value was used in the penalty term of AIC, AICc, QAIC, and QAICc. 
+    This value is either the number of independent 
+	parameters estimated from the rank of the variance-covariance matrix (by default), 
+	or NX+NY, or a specified value, depending on the input value of DF parameter.  See \code{F.update.df} to update this value after 
+    the model is fitted.} 
+  \item{df.estimated}{The number of parameters estimated from the rank of the variance-covariance matrix.  This 
+    is stored so that \code{df} can be updated using \code{F.update.df}. }
   \item{control}{A list containing the input maximization and estimation control parameters.}
   \item{message}{A vector of strings interpreting various codes about the estimation. 
     The messages interpret, in this order, the codes for (1) maximization algorithm used, 
@@ -348,11 +353,10 @@ McDonald, T. L., and S. C. Amstrup. 2001. Estimation of population size using
 \author{ Trent McDonald, WEST-INC, tmcdonald@west-inc.com }
 
 \seealso{ \code{\link{tvar}}, \code{\link{ivar}}, \code{\link{print.cjs}}, \code{\link{residuals.cjs}}, \code{\link{plot.cjs}}, 
-  \code{\link{F.cjs.covars}}, \code{\link{F.cjs.gof}}, \code{\link{mra.control}} }
+  \code{\link{F.cjs.covars}}, \code{\link{F.cjs.gof}}, \code{\link{mra.control}}, \code{\link{F.update.df}} }
 
 \examples{
 
-%\donttest{
 
 
 ## Fit CJS model to dipper data, time-varying capture and survivals.
@@ -364,7 +368,8 @@ dipper.cjs <- F.cjs.estim( ~tvar(ct,drop=c(1,2)), ~tvar(ct,drop=c(1,6,7)), dippe
 
 ## Method 2 : same thing using 2-d matrices
 xy <- F.cjs.covars( nrow(dipper.histories), ncol(dipper.histories) )
-for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } # Extract 2-D matrices of 0s and 1s
+# The following extracts 2-D matrices of 0s and 1s
+for(j in 1:ncol(dipper.histories)){ assign(paste("x",j,sep=""), xy$x[,,j]) } 
 dipper.cjs <- F.cjs.estim( ~x3+x4+x5+x6+x7, ~x2+x3+x4+x5, dipper.histories )
 
 ## Values in the 1st column of capture covariates do not matter
@@ -393,7 +398,6 @@ legend( "topleft", legend=c("logit", "sine", "hazard"), col=c("black", "red", "b
 
 
 
-%}
 
 }
 

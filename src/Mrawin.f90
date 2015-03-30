@@ -500,23 +500,23 @@ subroutine cjsmod( nan, &
     ptr_dead => idead
 
 !    ---- Open a log file, if tracing, primarily for debugging
-    if( trace /= 0 ) then 
-        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
-        if ( ioerr /= 0 ) then
-            ! Cannot open log file, can't do trace
-            trace = 0
-        end if
-    end if
+!    if( trace /= 0 ) then 
+!        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
+!        if ( ioerr /= 0 ) then
+!            ! Cannot open log file, can't do trace
+!            trace = 0
+!        end if
+!    end if
     
-    if( trace /= 0 ) then
-        !  Write header to log file.
-        call date_and_time( date, time )
-        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
-        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
-        write(logfile,9000) date, time
-        9000 FORMAT(/" CORMACK-JOLLY-SEBER OPEN POPULATION MODEL."/ &
-                         " Date and time of run: ",a,1x,a/)
-    end if
+!    if( trace /= 0 ) then
+!        !  Write header to log file.
+!        call date_and_time( date, time )
+!        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
+!        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
+!        write(logfile,9000) date, time
+!        9000 FORMAT(/" CORMACK-JOLLY-SEBER OPEN POPULATION MODEL."/ &
+!                         " Date and time of run: ",a,1x,a/)
+!    end if
 
 
 
@@ -528,7 +528,7 @@ subroutine cjsmod( nan, &
         call tests(nan, ns, hist, ng, group, c_hat, chisq_vif, i)  ! On return, i is degree of freedom for tests
     else
         call tests(nan, ns, hist, ng, group, aic, chisq_vif, i)  ! aic is just a dummy placeholder, i is df
-        if( trace /= 0 ) write(logfile,"(1x,a,f7.4,a)") "User specified c-hat = ", c_hat, " used."
+!        if( trace /= 0 ) write(logfile,"(1x,a,f7.4,a)") "User specified c-hat = ", c_hat, " used."
     end if
     df_vif = i   ! convert to real
 
@@ -587,47 +587,47 @@ subroutine cjsmod( nan, &
 
 
 !   ---- Log the results
-    if( trace /= 0 ) then 
-        write(logfile,9030)
-        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
-        write(logfile,9031) c_hat
-        9031 format(" Standard errors adjusted for c_hat =",f7.4)
-        if( cov_meth == 1 ) then
-            write(logfile,9041)
-            9041 format(" SE = approximation from numerical differentiation"/)
-        else
-            write(logfile,9050)
-            9050 format(" SE = approximation from maximization"/)
-        end if
-    
-        write(logfile,9060)
-        9060 format("     Param   Estimate         SE"/ &
-                        " ==============================="/ )
-        do i = 1, nx+ny
-            write(label,"(i5)") i
-            if( i <= nx ) then
-                label = "Cap" // adjustl(label)
-            else
-                label = "Sur" // adjustl(label)
-            end if
-    
-            WRITE(logfile,9040) label,parameters(i),se_param(i)
-            9040 format (1X,A9,1x,2(F10.6,1x))
-    
-        end do
-    
-        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic, qaic
-         9035 FORMAT(" ======================================="// &
-                    " Number of parameters (df) =",I8/ &
-                    "    Number of coefficients =",I8/ &
-                    "            Log-likelihood =",F14.6/ &
-                    "                  Deviance =",F14.6/ &
-                    "                       AIC =",F14.6/ &
-                    "                      QAIC =",F14.6)
-    
-    !    ---- Clean up
-        close(logfile)
-    end if
+!    if( trace /= 0 ) then 
+!        write(logfile,9030)
+!        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
+!        write(logfile,9031) c_hat
+!        9031 format(" Standard errors adjusted for c_hat =",f7.4)
+!        if( cov_meth == 1 ) then
+!            write(logfile,9041)
+!            9041 format(" SE = approximation from numerical differentiation"/)
+!        else
+!            write(logfile,9050)
+!            9050 format(" SE = approximation from maximization"/)
+!        end if
+!    
+!        write(logfile,9060)
+!        9060 format("     Param   Estimate         SE"/ &
+!                        " ==============================="/ )
+!        do i = 1, nx+ny
+!            write(label,"(i5)") i
+!            if( i <= nx ) then
+!                label = "Cap" // adjustl(label)
+!            else
+!                label = "Sur" // adjustl(label)
+!            end if
+!    
+!            WRITE(logfile,9040) label,parameters(i),se_param(i)
+!            9040 format (1X,A9,1x,2(F10.6,1x))
+!    
+!        end do
+!    
+!        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic, qaic
+!         9035 FORMAT(" ======================================="// &
+!                    " Number of parameters (df) =",I8/ &
+!                    "    Number of coefficients =",I8/ &
+!                    "            Log-likelihood =",F14.6/ &
+!                    "                  Deviance =",F14.6/ &
+!                    "                       AIC =",F14.6/ &
+!                    "                      QAIC =",F14.6)
+!    
+!    !    ---- Clean up
+!        close(logfile)
+!    end if
 
 end subroutine cjsmod
 
@@ -729,23 +729,23 @@ subroutine hugginsmodel( &
     link = input_link
 
 !    ---- Open a log file, if called for by the user
-    if (trace /= 0) then 
-        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
-        if ( ioerr /= 0 ) then
-            ! Cannot open log file, so can't do trace
-            trace = 0
-        end if
-    end if
+!    if (trace /= 0) then 
+!        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
+!        if ( ioerr /= 0 ) then
+!            ! Cannot open log file, so can't do trace
+!            trace = 0
+!        end if
+!    end if
 
-    if (trace /= 0) then
-        ! ---- Write header to log file.
-        call date_and_time( date, time )
-        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
-        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
-        write(logfile,9000) date, time
-        9000 FORMAT(/" HUGGINS CLOSED POPULATION MODEL."/ &
-                         " Date and time of run: ",a,1x,a/)
-    end if
+!    if (trace /= 0) then
+!        ! ---- Write header to log file.
+!        call date_and_time( date, time )
+!        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
+!        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
+!        write(logfile,9000) date, time
+!        9000 FORMAT(/" HUGGINS CLOSED POPULATION MODEL."/ &
+!                         " Date and time of run: ",a,1x,a/)
+!    end if
 
     
 !    ---- Set some program constants at run time
@@ -776,7 +776,7 @@ subroutine hugginsmodel( &
     end do
     if (ny >= 1) then
         do i = nx+1, ptr_np
-            parameters(i) = c_init(i)
+            parameters(i) = c_init(i-nx)
         end do
     end if
 
@@ -824,55 +824,56 @@ subroutine hugginsmodel( &
 
 
 !   ---- Log the results
-    if ( trace /= 0 ) then 
-        write(logfile,9030)
-        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
-        if( cov_meth == 1 ) then
-            write(logfile,9041)
-            9041 format(" SE = approximation from numerical differentiation"/)
-        else
-            write(logfile,9050)
-            9050 format(" SE = approximation from maximization"/)
-        end if
-    
-        write(logfile,9060)
-        9060 format("     Param   Estimate         SE"/ &
-                        " ==============================="/ )
-        do i = 1, nx
-            write(label,"(i5)") i
-            label = "  Cap" // adjustl(label)
-    
-            WRITE(logfile,9040) label,parameters(i),se_param(i)
-            9040 format (1X,A9,1x,2(F10.6,1x))
-        end do
-        if (ny >= 1) then
-            do i = nx+1, nx+ny
-                write(label,"(i5)") (i - nx)
-                label = "Recap" // adjustl(label)
-    
-                WRITE(logfile,9040) label,parameters(i),se_param(i)
-            end do
-        end if
-    
-        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic
-         9035 FORMAT(" ======================================="// &
-                    " Number of parameters (df) =",I8/ &
-                    "    Number of coefficients =",I8/ &
-                    "            Log-likelihood =",F14.6/ &
-                    "                  Deviance =",F14.6/ &
-                    "                       AIC =",F14.6)
-    
-        WRITE(logfile,9100) n_hat, se_n_hat, n_ci_low, n_ci_high
-         9100 FORMAT(" ======================================="// &
-                    "  Population size estimate =",F14.6/ &
-                    "       SE(Population size) =",F14.6/ &
-                    "     Lower 95% CI endpoint =",F14.6/ &
-                    "     Upper 95% CI endpoint =",F14.6)
-    
-    !    ---- Clean up
-        close(logfile)
-        
-    end if    
+!    if ( trace /= 0 ) then 
+!        write(logfile,9030)
+!        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
+!        if( cov_meth == 1 ) then
+!            write(logfile,9041)
+!            9041 format(" SE = approximation from numerical differentiation"/)
+!        else
+!            write(logfile,9050)
+!            9050 format(" SE = approximation from maximization"/)
+!        end if
+!    
+!        write(logfile,9060)
+!        9060 format("     Param   Estimate         SE"/ &
+!                        " ==============================="/ )
+!        do i = 1, nx
+!            write(label,"(i5)") i
+!            label = "  Cap" // adjustl(label)
+!    
+!            WRITE(logfile,9040) label,parameters(i),se_param(i)
+!            9040 format (1X,A9,1x,2(F10.6,1x))
+!        end do
+!        if (ny >= 1) then
+!            do i = nx+1, nx+ny
+!
+!         write(label,"(i5)") (i - nx)
+!                label = "Recap" // adjustl(label)
+!    
+!                WRITE(logfile,9040) label,parameters(i),se_param(i)
+!            end do
+!        end if
+!    
+!        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic
+!         9035 FORMAT(" ======================================="// &
+!                    " Number of parameters (df) =",I8/ &
+!                    "    Number of coefficients =",I8/ &
+!                    "            Log-likelihood =",F14.6/ &
+!                    "                  Deviance =",F14.6/ &
+!                    "                       AIC =",F14.6)
+!    
+!        WRITE(logfile,9100) n_hat, se_n_hat, n_ci_low, n_ci_high
+!         9100 FORMAT(" ======================================="// &
+!                    "  Population size estimate =",F14.6/ &
+!                    "       SE(Population size) =",F14.6/ &
+!                    "     Lower 95% CI endpoint =",F14.6/ &
+!                    "     Upper 95% CI endpoint =",F14.6)
+!    
+!    !    ---- Clean up
+!        close(logfile)
+!        
+!    end if    
 
 end subroutine hugginsmodel
 
@@ -947,17 +948,17 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
 
     if( .not.(exit_code == 1)) then
         ! Maximization did not work for some reason, do not run any of the hessian or covariance routines
-        if ( trace  /= 0) then
-            write(logfile,*)
-            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
-            if (exit_code == 0) then
-                write(logfile,*) "     Hessian not positive definite."
-            else if (exit_code == 2) then
-                write(logfile,*) "     Underflow/rounding error."
-            else if (exit_code == 3) then
-                write(logfile,*) "     Did not converge - too many function evaluations."
-            end if
-        end if
+!        if ( trace  /= 0) then
+!            write(logfile,*)
+!            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
+!            if (exit_code == 0) then
+!                write(logfile,*) "     Hessian not positive definite."
+!            else if (exit_code == 2) then
+!                write(logfile,*) "     Underflow/rounding error."
+!            else if (exit_code == 3) then
+!                write(logfile,*) "     Did not converge - too many function evaluations."
+!            end if
+!        end if
         parameters = 0
         covariance = -1
         cov_npd = 1
@@ -973,7 +974,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         ! ---- Hessian and Covariance Section
         if( cov_meth == 1 ) then
 
-            if( trace /= 0) write(logfile,*) "Calling comp_hessian..."
+!            if( trace /= 0) write(logfile,*) "Calling comp_hessian..."
             ! compute hessian matrix by numeric 2nd derivatives.  Covariance is actually the
             ! Hessian.  I'm just using covarinace as storage here
             call comp_hessian(CJS_loglik, np, parameters, loglik, covariance)
@@ -1018,30 +1019,30 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         if( cov_npd == 0 .and. df > 0 ) then
             !df = np
             df = matrank(covariance, np, np)
-            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
+!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
         else
-            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
+!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
         end if
 
 
         ! ---- Now invert the negative matrix of 2nd derivatives
         call syminv(covariance, np, cov_npd)
 
-        if( trace /= 0 ) then 
-            write(logfile,*) " ----- Coefficient covariance matrix -----"
-            do i = 1, np
-                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
-            end do
-        end if
+!        if( trace /= 0 ) then 
+!            write(logfile,*) " ----- Coefficient covariance matrix -----"
+!            do i = 1, np
+!                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
+!            end do
+!        end if
 
         !   Could check for positive definiteness here
 
 
         if( cov_npd == 1 ) then
-            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
+!            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
             !df = 0
         else if (cov_npd == 2) then
-            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
+!            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
         end if
     end if
 
@@ -1122,17 +1123,17 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
     if( .not.(exit_code == 1)) then
         ! Maximization did not work for some reason, do not run any of the hessian or covariance routines
-        if( trace /= 0 ) then
-            write(logfile,*)
-            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
-            if (exit_code == 0) then
-                write(logfile,*) "     Hessian not positive definite."
-            else if (exit_code == 2) then
-                write(logfile,*) "     Underflow/rounding error."
-            else if (exit_code == 3) then
-                write(logfile,*) "     Did not converge - too many function evaluations."
-            end if
-        end if 
+!        if( trace /= 0 ) then
+!            write(logfile,*)
+!            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
+!            if (exit_code == 0) then
+!                write(logfile,*) "     Hessian not positive definite."
+!            else if (exit_code == 2) then
+!                write(logfile,*) "     Underflow/rounding error."
+!            else if (exit_code == 3) then
+!                write(logfile,*) "     Did not converge - too many function evaluations."
+!            end if
+!        end if 
         parameters = 0
         covariance = -1
         cov_npd = 1
@@ -1191,31 +1192,31 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
         if( cov_npd == 0 .and. df > 0 ) then
             df = matrank(covariance, np, np)
-            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
+!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
         else
-            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
+!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
         end if
 
 
         ! ---- Now invert the negative matrix of 2nd derivatives
         call syminv(covariance, np, cov_npd)
 
-        if( trace /= 0 ) then
-            write(logfile,*)
-            write(logfile,*) " ----- Coefficient covariance matrix -----"
-            do i = 1, np
-                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
-            end do
-        end if
+!        if( trace /= 0 ) then
+!            write(logfile,*)
+!            write(logfile,*) " ----- Coefficient covariance matrix -----"
+!            do i = 1, np
+!                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
+!            end do
+!        end if
         
         !   Could check for positive definiteness here
 
 
         if( cov_npd == 1 ) then
-            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
+!            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
             df = 0
         else if (cov_npd == 2) then
-            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
+!            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
         end if
     end if
 
@@ -1311,7 +1312,8 @@ double precision function CJS_loglik(p, beta)
         ! ---- Debugging: ptr_hist(i,j) should never be 2, only 0 and 1
         !do j=1,ptr_ns
         !    if( ptr_hist(i,j) == 0 .or. ptr_hist(i,j) == 1 ) cycle
-        !    write(logfile,*) "**** Invalid capture history with a 2 ***: Animal", i, " Occasion", j, " Hist value=", ptr_hist(i,j)
+        !    write(logfile,*) "**** Invalid capture history with a 2 ***: Animal", i, 
+        !       " Occasion", j, " Hist value=", ptr_hist(i,j)
         !end do
 
         ! ---- First part of the log-likelihood function, between first and last 1
@@ -1383,26 +1385,26 @@ double precision function CJS_loglik(p, beta)
 
 
         ! inserted debugging code. Set PRNT in constants module
-        if( trace >= 2 ) then
-            write(logfile,'(1x,a,5(1x,a,i5))') "---------", "i=", i, "init1=", init1, "init2=", init2, "first(i)=", &
-                ptr_first(i), "last(i)=", ptr_last(i)
-            write(logfile,*) "cap_coefs=", (cap_beta(j), j=1,ptr_nx)
-            write(logfile,*) "surv_coefs=", (surv_beta(j), j=1,ptr_ny)
-            write(logfile,62) "vpij=", (vpij(j), j=2,ptr_ns)
-            write(logfile,62) "vphiij=", (vphiij(j), j=1,ptr_ns-1)
-            write(logfile,63) "sum1=", sum1, " sum2=", sum2
-            !61  format(1x,a,25(1x,f4.2))
-            62  format(1x,a,25(1x,f6.3))
-            63  format(1x,a, f12.7,a, f12.7)
-        end if
+!        if( trace >= 2 ) then
+!            write(logfile,'(1x,a,5(1x,a,i5))') "---------", "i=", i, "init1=", init1, "init2=", init2, "first(i)=", &
+!                ptr_first(i), "last(i)=", ptr_last(i)
+!            write(logfile,*) "cap_coefs=", (cap_beta(j), j=1,ptr_nx)
+!            write(logfile,*) "surv_coefs=", (surv_beta(j), j=1,ptr_ny)
+!            write(logfile,62) "vpij=", (vpij(j), j=2,ptr_ns)
+!            write(logfile,62) "vphiij=", (vphiij(j), j=1,ptr_ns-1)
+!            write(logfile,63) "sum1=", sum1, " sum2=", sum2
+!            !61  format(1x,a,25(1x,f4.2))
+!            62  format(1x,a,25(1x,f6.3))
+!            63  format(1x,a, f12.7,a, f12.7)
+!        end if
 
         xlnlik=xlnlik+sum1+sum2
     end do
 
-    if (trace >= 2) then
-        write(logfile,*)
-        write(logfile,*) "Log likelihood = ", xlnlik
-    end if
+!    if (trace >= 2) then
+!        write(logfile,*)
+!        write(logfile,*) "Log likelihood = ", xlnlik
+!    end if
 
     CJS_loglik = xlnlik
 
@@ -1463,13 +1465,13 @@ SUBROUTINE CJS_gradient(p, beta, f, grad)
 
     end do
 
-    if(trace >= 3) then
-        write(logfile,*) "Gradient vector:"
-        write(logfile,*) "    i         coef     Gradient"
-        write(logfile,*) "----- ------------ ------------"
-        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
-        10 format(1x,i5,1x,2F12.7)
-    end if
+!    if(trace >= 3) then
+!        write(logfile,*) "Gradient vector:"
+!        write(logfile,*) "    i         coef     Gradient"
+!        write(logfile,*) "----- ------------ ------------"
+!        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
+!        10 format(1x,i5,1x,2F12.7)
+!    end if
 
 
 end subroutine
@@ -1506,23 +1508,23 @@ SUBROUTINE Huggins_obj(p,beta,lnlik,grad)
     integer :: i
 
 !    Calculate the log-likelihood
-    if( trace >= 2 ) then 
-        write(logfile,*) "*****CALCULATING LOG LIKE******"
-        write(logfile,*) "p=", p, "beta=", (beta(i), i=1,p)
-
-        close(logfile)
-        open(logfile,file='mra.log',status='old',access='append')
-        
-    end if
+!    if( trace >= 2 ) then 
+!        write(logfile,*) "*****CALCULATING LOG LIKE******"
+!        write(logfile,*) "p=", p, "beta=", (beta(i), i=1,p)
+!
+!        close(logfile)
+!        open(logfile,file='mra.log',status='old',access='append')
+!        
+!    end if
     
     lnlik = -1.0D0 * Huggins_loglik(p, beta)
 
 !    Calculate the gradient
-    if( trace >= 3 ) then
-        write(logfile,*) "*****CALLING GRADIENT******"
-        close(logfile)
-        open(logfile,file='mra.log',status='old',access='append')
-    end if
+!    if( trace >= 3 ) then
+!        write(logfile,*) "*****CALLING GRADIENT******"
+!        close(logfile)
+!        open(logfile,file='mra.log',status='old',access='append')
+!    end if
     
     call Huggins_gradient(p, beta, lnlik, grad)
 
@@ -1625,10 +1627,10 @@ double precision function Huggins_loglik(p, beta)
 
     end do
 
-    if (trace >= 2) then
-        write(logfile,*)
-        write(logfile,*) "Log likelihood = ", xlnlik
-    end if
+!    if (trace >= 2) then
+!        write(logfile,*)
+!        write(logfile,*) "Log likelihood = ", xlnlik
+!    end if
 
     Huggins_loglik = xlnlik
 
@@ -1691,13 +1693,13 @@ SUBROUTINE Huggins_gradient(p, beta, f, grad)
 
            end do
 
-    if(trace >= 3) then
-        write(logfile,*) "Gradient vector:"
-        write(logfile,*) "    i         coef     Gradient    1-sided G"
-        write(logfile,*) "----- ------------ ------------ ------------"
-        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
-        10 format(1x,i5,1x,3F12.7)
-    end if
+!    if(trace >= 3) then
+!        write(logfile,*) "Gradient vector:"
+!        write(logfile,*) "    i         coef     Gradient    1-sided G"
+!        write(logfile,*) "----- ------------ ------------ ------------"
+!        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
+!        10 format(1x,i5,1x,3F12.7)
+!    end if
 
 
 end subroutine
@@ -2115,7 +2117,7 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 
         
         EPSMCH = FD05AD(1)*10.0D0
-        IF (IPRINT.NE.0) WRITE (logfile,FMT=1000)
+!        IF (IPRINT.NE.0) WRITE (logfile,FMT=1000)
  1000   FORMAT (' ENTRY TO VA09AD',/)
         NN = N* (N+1)/2
         IG = N
@@ -2147,13 +2149,13 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
    20   CONTINUE
         IF (IPRINT.EQ.0) GO TO 21
         IF (MOD(ITN,IPRINT).NE.0) GO TO 21
-        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
- 1001   FORMAT (1x,"Iteration=",I5,1x,"Function evals=",I5,1x,"Exit code=",I5,1x,"Loglik=",D24.16)
-        WRITE (logfile,FMT=1002) "F=", F
- 1002   FORMAT (1x,A,1x,500(1x,5D24.16,/))
-        IF (IPRINT.LT.0) GO TO 21
-        WRITE (logfile,FMT=1002) "X=", (X(I),I=1,N)
-        WRITE (logfile,FMT=1002) "G=", (G(I),I=1,N)
+!        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
+! 1001   FORMAT (1x,"Iteration=",I5,1x,"Function evals=",I5,1x,"Exit code=",I5,1x,"Loglik=",D24.16)
+!        WRITE (logfile,FMT=1002) "F=", F
+! 1002   FORMAT (1x,A,1x,500(1x,5D24.16,/))
+!        IF (IPRINT.LT.0) GO TO 21
+!        WRITE (logfile,FMT=1002) "X=", (X(I),I=1,N)
+!        WRITE (logfile,FMT=1002) "G=", (G(I),I=1,N)
    21   CONTINUE
         ITN = ITN + 1
         DO 22 I = 1,N
@@ -2246,11 +2248,11 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 !       Trent added the following line so that number of function evaluations is returned. 
 !       Careful: this means MAXFN must be a variable in the calling routine, using constant, like 1000, will not work.   
         MAXFN = IFN    
-        IF (IPRINT.EQ.0) RETURN
-        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
-        !WRITE (logfile,FMT=1002) "Final F=", F
-        WRITE (logfile,FMT=1002) "Final X=", (X(I),I=1,N)
-        WRITE (logfile,FMT=1002) "Final G=", (G(I),I=1,N)
+!        IF (IPRINT.EQ.0) RETURN
+!        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
+!        !WRITE (logfile,FMT=1002) "Final F=", F
+!        WRITE (logfile,FMT=1002) "Final X=", (X(I),I=1,N)
+!        WRITE (logfile,FMT=1002) "Final G=", (G(I),I=1,N)
         RETURN
 
 end subroutine
@@ -3887,10 +3889,10 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
     ! ---- Compute h vector, different step size in each dimension
     !   Note that eps is stored in module constants, and set in routine set_constants
 
-    if (trace /= 0) then
-        write(logfile,*)
-        write(logfile,*) "----- Computing Matrix of 2nd derivatives ----"
-    end if
+!    if (trace /= 0) then
+!        write(logfile,*)
+!        write(logfile,*) "----- Computing Matrix of 2nd derivatives ----"
+!    end if
 
     ! Note: h can be zero when beta is zero. Beta can be exactly zero when
     !       there is a singularity (overparameterization).
@@ -3910,13 +3912,13 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
     !end do
 
     ! This loop computes additive bits same way as MARK
-    if (trace /= 0) write(logfile,*) "DELTAX=", deltax
+    ! if (trace /= 0) write(logfile,*) "DELTAX=", deltax
     do i = 1, np
         h(i) = (deltax / 2.D0) * (1.D0 + abs(beta(i)))*1.D5
     end do
 
-    if (trace /= 0) write(logfile,*) " ----- h (=delta) vector -----"
-    if (trace /= 0) write(logfile,"(1000(g20.10,','))") (h(i), i=1,np)
+    !if (trace /= 0) write(logfile,*) " ----- h (=delta) vector -----"
+    !if (trace /= 0) write(logfile,"(1000(g20.10,','))") (h(i), i=1,np)
     !write(logfile, *) "(input) f= ", f, " CJS_loglik(beta)=", FUNCT(np, beta)
 
     ! ---- Compute hessian using "symetric" derivatives
@@ -3993,12 +3995,12 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
     hess = -1.0D0 * hess
 
     ! debugging
-    if (trace >= 1) then
-        write(logfile,*) " ----- Matrix of 2nd derivatives, prior to inversion -----"
-        do i = 1, np
-            write(logfile,"(1000(g20.10,','))") (hess(i,j), j=1,np)
-        end do
-    end if
+    !if (trace >= 1) then
+    !    write(logfile,*) " ----- Matrix of 2nd derivatives, prior to inversion -----"
+    !    do i = 1, np
+    !        write(logfile,"(1000(g20.10,','))") (hess(i,j), j=1,np)
+    !    end do
+    !end if
 
 end subroutine
 
@@ -4074,7 +4076,7 @@ subroutine syminv(b,n,ierr)
 
     !**** singular matrix
     100 continue
-    if (trace /= 0) write(logfile,"(/a)") " Singular matrix of 2nd derivatives:-"
+    !if (trace /= 0) write(logfile,"(/a)") " Singular matrix of 2nd derivatives:-"
     b = 0.0
     ierr=1
     return
@@ -4116,21 +4118,21 @@ integer function matrank( x, m, n )
         return
     end if
 
-    if (trace /= 0) then 
-        write(logfile,*)
-        write(logfile,*) " ----- Singular values of Hessian matrix -----"
-        write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
-    end if
+    !if (trace /= 0) then 
+    !    write(logfile,*)
+    !    write(logfile,*) " ----- Singular values of Hessian matrix -----"
+    !    write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
+    !end if
 
     !   Compute maximum of singular values. Scale singular values by it
     max_s = maxval( s_vals )
     s_vals = s_vals / max_s
 
-    if (trace /= 0) then
-        write(logfile,*) " ----- Conditioned Singular values of Hessian matrix -----"
-        write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
-        write(logfile,*)
-    end if
+    !if (trace /= 0) then
+    !    write(logfile,*) " ----- Conditioned Singular values of Hessian matrix -----"
+    !    write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
+    !    write(logfile,*)
+    !end if
 
     !   Count number of singular values > zero.
     matrank = 0
@@ -4385,15 +4387,15 @@ implicit none
 !    estimated variance inflation factor (VIF).
 
 
-    if (trace /= 0) then 
-            WRITE(logfile,9005) chat_rot
-        9005     FORMAT(/"                   TESTS OF ASSUMPTIONS"/ &
-                   " Only Test2 and Test 3 chi-square component tables"/ &
-                   " for which all cells are >= ",i2," are used for "/ &
-                   " calculating totals and the estimate variance"/ &
-                   " inflation factor (C-hat)."/)
-            write(logfile,*) "Number of Groups=", ng
-    end if
+!    if (trace /= 0) then 
+!            WRITE(logfile,9005) chat_rot
+!        9005     FORMAT(/"                   TESTS OF ASSUMPTIONS"/ &
+!                   " Only Test2 and Test 3 chi-square component tables"/ &
+!                   " for which all cells are >= ",i2," are used for "/ &
+!                   " calculating totals and the estimate variance"/ &
+!                   " inflation factor (C-hat)."/)
+!            write(logfile,*) "Number of Groups=", ng
+!    end if
     CHIGT=0.0
     IDFGT=0
 
@@ -4425,32 +4427,32 @@ implicit none
 
         IF (NANG > 0) THEN
 
-            if (trace /= 0) then
-                WRITE(logfile,9010)
-    9010              FORMAT(/," FIRST RECAPTURES FROM RELEASES (i.e., m-array)")
-                write(logfile,9015) "   i  R(i)", (i, i=2,ns)
-    9015            format(a,1000i4:/(10x,1000i4))
-                write(logfile,"(1000a1)") ("=", i=1,(4*(ns-1)+10))
-                       DO I=1,NS-1
-                           WRITE(logfile,"(I4,I6,1000a4:/(10X,1000a4))",advance="no") I,RELESE(I),(" ", J=2,i)
-                    WRITE(logfile,"(1000I4:/(10X,1000I4))") (M(I,J), J=i+1,NS)
-                end do
-            end if
+!            if (trace /= 0) then
+!                WRITE(logfile,9010)
+!    9010              FORMAT(/," FIRST RECAPTURES FROM RELEASES (i.e., m-array)")
+!                write(logfile,9015) "   i  R(i)", (i, i=2,ns)
+!    9015            format(a,1000i4:/(10x,1000i4))
+!                write(logfile,"(1000a1)") ("=", i=1,(4*(ns-1)+10))
+!                       DO I=1,NS-1
+!                           WRITE(logfile,"(I4,I6,1000a4:/(10X,1000a4))",advance="no") I,RELESE(I),(" ", J=2,i)
+!                    WRITE(logfile,"(1000I4:/(10X,1000I4))") (M(I,J), J=i+1,NS)
+!                end do
+!            end if
 
             CALL TEST2(NS,M,CHISQ,IDF,CHITOT,IDFTOT,IUSE)
 
-            if (trace /= 0) then
-                WRITE(logfile,9020) (I,CHISQ(I),IDF(I),IUSE(I), I=2,NS-2)
-    9020              FORMAT(/"                                Used for"/ &
-                                    "  Release    Chi-Sq        df      C-hat (1 = yes)"/ &
-                                    " ======================================="/ &
-                                    (I10,F10.2,2I10))
+!            if (trace /= 0) then
+!                WRITE(logfile,9020) (I,CHISQ(I),IDF(I),IUSE(I), I=2,NS-2)
+!    9020              FORMAT(/"                                Used for"/ &
+!                                    "  Release    Chi-Sq        df      C-hat (1 = yes)"/ &
+!                                    " ======================================="/ &
+!                                    (I10,F10.2,2I10))
     
     
-                WRITE(logfile,9030) CHITOT,IDFTOT
-    9030              FORMAT( " ======================================="/ &
-                                    "     Total",F10.2,I10)
-            end if
+!                WRITE(logfile,9030) CHITOT,IDFTOT
+!    9030              FORMAT( " ======================================="/ &
+!                                    "     Total",F10.2,I10)
+!            end if
 
             CHIGT=CHIGT+CHITOT
             IDFGT=IDFGT+IDFTOT
@@ -4462,7 +4464,7 @@ implicit none
 
           DO L = 1, NG
 
-        if (trace /= 0) WRITE(logfile,"(/A,I3)") " TEST 3 FOR GROUP", L
+!        if (trace /= 0) WRITE(logfile,"(/A,I3)") " TEST 3 FOR GROUP", L
 
         ! Calculate R and S components for releases 2 to NS-1
         DO J=2,NS-1
@@ -4565,20 +4567,20 @@ implicit none
             END IF
 
             ! Print tests for Jth release
-            if (trace /= 0) WRITE(logfile,9040) J,N11,N12,M11,M12,N21,N22,M21,M22,COMPR,COMPS, &
-                IDFR,IDFS,IUSER,IUSES
-9040             FORMAT(/" Chi-Squared Tests for Animals Captured in Sample",I3/ &
-                                "                          R Test       |        S Test"/ &
-                                "                                       |            Not seen"/ &
-                                "                        Seen  Not seen | Seen next      next"/ &
-                                "                       again     again |    sample    sample"/ &
-                                "============================================================"/ &
-                                "     Seen before",I12,I10,I12,I10/ &
-                                " Not seen before",I12,I10,I12,I10/ &
-                                "============================================================"/ &
-                                "     Chi-squared",12X,F10.2,12X,F10.2/ &
-                                "              df",2I22/ &
-                                " Used in Chat(1)",2I22 )
+!            if (trace /= 0) WRITE(logfile,9040) J,N11,N12,M11,M12,N21,N22,M21,M22,COMPR,COMPS, &
+!                IDFR,IDFS,IUSER,IUSES
+!9040             FORMAT(/" Chi-Squared Tests for Animals Captured in Sample",I3/ &
+!                                "                          R Test       |        S Test"/ &
+!                                "                                       |            Not seen"/ &
+!                                "                        Seen  Not seen | Seen next      next"/ &
+!                                "                       again     again |    sample    sample"/ &
+!                                "============================================================"/ &
+!                                "     Seen before",I12,I10,I12,I10/ &
+!                                " Not seen before",I12,I10,I12,I10/ &
+!                                "============================================================"/ &
+!                                "     Chi-squared",12X,F10.2,12X,F10.2/ &
+!                                "              df",2I22/ &
+!                                " Used in Chat(1)",2I22 )
 
             CHIGT=CHIGT+COMPR*IUSER+COMPS*IUSES
             IDFGT=IDFGT+IDFR*IUSER+IDFS*IUSES
@@ -4595,9 +4597,9 @@ implicit none
         VIF=1.0
     ENDIF
 
-    if (trace /= 0) WRITE(logfile,9050) CHIGT,IDFGT,VIF
-9050     FORMAT(/" Total chi-squared from used components =",F8.2," with",I3," df"/&
-                " Variance inflation factor (C-hat) =",F7.2)
+!    if (trace /= 0) WRITE(logfile,9050) CHIGT,IDFGT,VIF
+!9050     FORMAT(/" Total chi-squared from used components =",F8.2," with",I3," df"/&
+!                " Variance inflation factor (C-hat) =",F7.2)
 
 end subroutine
 
@@ -4629,7 +4631,7 @@ implicit none
 
     ! Exit if test not possible
     IF (NS < 4) THEN
-        if (trace /= 0) WRITE(logfile,"(/A)") " TEST 2 not possible!"
+!        if (trace /= 0) WRITE(logfile,"(/A)") " TEST 2 not possible!"
         DO I=2,NS-2
             IUSE(I)=0
             CHISQ(I)=0.0
