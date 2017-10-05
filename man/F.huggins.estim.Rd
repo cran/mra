@@ -40,7 +40,7 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     the recapture model is NY.  Total number of parameters this routine 
     attempts to estimate is NX+NY. See \code{df} argument. If \code{recapture=NULL}, 
     no recapture model (or the empty model) is estimated.  In this case, 
-    recapture probabilities equal initial capture probabilties and both depend on the 
+    recapture probabilities equal initial capture probabilities and both depend on the 
     model in \code{capture}. Note that NULL models are specified without the ~.}
   \item{histories}{ A NAN X NS = (number of individuals) X (number of capture occasions) matrix 
     containing capture histories.  Capture histories are comprised of 0's and 1's only. 
@@ -49,7 +49,8 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     i was captured on occasion j and released live back into the population.  Because 
     the population 
     being sampled is assumed closed, deaths on capture (known removals) are not allowed. 
-    If deaths on capture occured and an estimate of N at the beginning of the 
+    If deaths on capture occurred and an estimate of N at the beginning 
+    of the 
     study is sought, remove the entire history, estimate N using this routine from
     the remaining histories, and add back the number of deleted histories.}
   \item{remove}{A logical scalar, or vector of logical values, specifying which 
@@ -59,7 +60,7 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
     \emph{with the same coefficient values}.  See Details section.  If \code{remove}
     is a vector, each entry specifies whether the corresponding effect in \code{capture} 
     should be removed from the \code{recapture} model.  
-    If \code{remove} is shorter than NX (the number of matricies in 
+    If \code{remove} is shorter than NX (the number of matrices in 
     \code{capture}), it is replicated to have length NX.}
   \item{cap.init}{ (optional) Vector of initial values for coefficients in the initial 
     capture model.  One element 
@@ -91,7 +92,7 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
             The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/8 )}{2}}{p = 0.5*(1 + sin( eta*pi/8 ))} for 
             values of \eqn{\eta}{eta} between 
             -4 and 4.  For values of \eqn{\eta}{eta} < -4, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 4, \eqn{p} = 1.
-            Scaling of the sine link was choosen to yield coefficients roughly the 
+            Scaling of the sine link was chosen to yield coefficients roughly the 
             same magnitude as the logit link.
         \item The "hazard" link is \eqn{\eta = log( -log( 1 - p ))}{eta = log( -log( 1 - p ))}, with inverse 
         \eqn{1 - exp( -exp( \eta ))}{1 - exp( -exp( eta ))}.  The value of \eqn{p} from the inverse hazard 
@@ -110,7 +111,7 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
 \details{
     This routine compiles all the 
     covariate matrices, then calls a Fortran routine to maximize the 
-    Huggins closed population likelihood. So-called heterogenious models 
+    Huggins closed population likelihood. So-called heterogeneous models 
     that utilize mixture distributions for probability of capture cannot be
     fitted via this routine.  
   
@@ -125,8 +126,8 @@ F.huggins.estim(capture, recapture=NULL, histories, remove=FALSE, cap.init, reca
          G0 + G1*z1[i,j] + ... + Gb*zb[i,j]}
     where the x's and z's are covariate values specified in \code{capture} 
     and \code{recapture}, respectively, and the \eqn{\beta}{B}'s and 
-    \eqn{\gamma}{G}'s are estimated coefficients. (For breavity, 
-    '\emph{a}' has been substitutied for NX, '\emph{b}' for NY.) In other words, by default 
+    \eqn{\gamma}{G}'s are estimated coefficients. (For brevity, 
+    '\emph{a}' has been substituted for NX, '\emph{b}' for NY.) In other words, by default 
     all effects in the capture model also appear in the recapture model 
     \emph{with the same estimated coefficients}.  This is done so that 
     capture and recapture probabilities can be constrained to equal one another. 

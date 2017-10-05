@@ -41,6 +41,11 @@ if( length(intervals) < (ns-1)){
     intervals <- c(intervals, 0)  # Make this vector length ns, but we never use the last element in estimation.
 }
 
+SVD_ZERO = 0.5E-6   # This is the value that determines when a singular value is zero.  
+                    # I.e., when a singular value is less than this, it is considered 
+                    # zero.  This is key when computing rank of the 
+                    # variance-covariance matrix. Mark uses 0.5e-6.
+
 
 # ---- Get the X and Y matricies.  After this, the x and Y matricies are in huge NAN by (ns*nx) matricies.
 covars <- F.cr.model.matrix( capture, survival, nan, ns )  
@@ -82,7 +87,7 @@ if( missing( group )){
 vif <- c.hat
 
 #   Do the estimation, but first allocate room for answers
-loglik <- deviance <- aic <- qaic <- chisq.vif <- df.vif <- 0
+loglik <- chisq.vif <- df.vif <- 0
 parameters <- se.param <- rep(0, nx + ny )
 covariance <- matrix( 0, nx+ny, nx+ny )
 p.hat <- se.p.hat <- s.hat <- se.s.hat <- matrix( 0, nan, ns )
@@ -90,12 +95,6 @@ exit.code <- cov.code <- 0
 n.hat <- se.n.hat <- rep(0, ns)
 # on entry to .Fortran, maxfn is maximum number of function evals.  On return, maxfn is actual number of evaluations.
 maxfn <- control$maxfn  
-if( is.na(df) ){
-    df.estimated <- 1  # Have MRAWIN estimate rank of var-covar matrix
-} else {
-    #df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
-    df.estimated <- 1  #  Have MRAWIN estimate number of parameters.  Work out the one the user wants later
-}
 
 
 #   Re-code the link specification to integers
@@ -122,7 +121,6 @@ ans <- .Fortran( "cjsmod",
         group       = as.integer(group), 
         algorithm   = as.integer(control$algorithm), 
         cov.meth    = as.integer(control$cov.meth), 
-        trace       = as.integer(control$trace),
         link        = as.integer(link.code),
         nhat.v.meth = as.integer(nhat.v.meth), 
         capX        = as.double(covars$capX), 
@@ -132,9 +130,6 @@ ans <- .Fortran( "cjsmod",
         maxfn       = as.integer(maxfn),
         beta.tol.vec= as.double(control$tol), 
         loglik      = as.double(loglik), 
-        deviance    = as.double(deviance), 
-        aic         = as.double(aic), 
-        qaic        = as.double(qaic), 
         vif         = as.double(vif), 
         chisq.vif   = as.double(chisq.vif), 
         df.vif      = as.double(df.vif), 
@@ -149,7 +144,6 @@ ans <- .Fortran( "cjsmod",
         se.n.hat    = as.double(se.n.hat), 
         exit.code   = as.integer(exit.code), 
         cov.code    = as.integer(cov.code), 
-        df.estimated= as.integer(df.estimated), 
         intervals   = as.double(intervals), 
         PACKAGE="mra" 
         ) 
@@ -163,11 +157,37 @@ ans$se.param[ ans$se.param < 0 ] <- NA
 
 # ----- R does not preserve the matrix structures in .Fortran call.  Put matricies, 
 #   which are now vectors, back to matricies.
-covariance <- matrix( ans$covariance, nrow=nx+ny ) 
+covariance     <- matrix( ans$covariance, nrow=nx+ny ) 
 ans$p.hat      <- matrix( ans$p.hat, nrow=nan )
 ans$se.p.hat   <- matrix( ans$se.p.hat, nrow=nan )
 ans$s.hat      <- matrix( ans$s.hat, nrow=nan )
 ans$se.s.hat   <- matrix( ans$se.s.hat, nrow=nan )
+
+# ----- Fix up number of parameters.
+if( is.na(df) ){
+  # Singular values of hessian are more stable than of covariance
+  hess <- tryCatch(solve(covariance), 
+                   error=function(x){1},
+                   warning=function(x){2})
+  if(is.matrix(hess)){
+    # likely everything ok with var-covar, but could have NA in hess
+    svals <- tryCatch(svd(hess)$d, 
+                      error=function(x){NA},
+                      warning=function(x){NA})
+    if(!all(is.na(svals))){
+      svals = svals / max(svals, na.rm=TRUE)
+      df <- sum(svals >= SVD_ZERO, na.rm=TRUE)
+    } else {
+      df <- NA
+      ans$cov.code <- 1
+    }
+  } else {
+    df <- NA
+    ans$cov.code <- 1
+  }
+} else if( df <= 0 ){
+  df <- nx+ny  # assume full rank
+} # else use the values supplied by user (unchanged from input)
 
 # ----- Work out exit codes
 if( ans$exit.code==0 ){
@@ -179,13 +199,13 @@ if( ans$exit.code==0 ){
 } else if( ans$exit.code == 3 ){
     exit.mess = "FAILURE: Likelihood evaluated too many times"
 } else if( ans$exit.code == -1 ){
-    exit.mess = "FAILURE: Algorithm 2 not implimented yet.  Contact Trent McDonald."
+    exit.mess = "FAILURE: Algorithm 2 not implimented."
 } else {
     exit.mess = "Unknown exit code"
 }
 
 if(control$algorithm == 1){
-    alg.mess <- "Optimization by VA09AD."
+    alg.mess <- "Optimization by line search."
 } else {
     alg.mess <- "Unknown optimization routine."
 }
@@ -242,14 +262,9 @@ names(se.surcoef) <- covars$sur.vars
 dimnames(covariance) <- list( c( paste("cap.",names( capcoef ),sep=""), paste("sur.",names( surcoef ), sep="")),
     c( paste("cap.",names( capcoef ),sep=""), paste("sur.",names( surcoef ), sep="")))
 
-# ----- Fix up number of parameters.
-if( is.na(df) ){
-    df <- ans$df.estimated   # use the rank estimated by MRAWIN
-} else if( df <= 0 ){
-    df <- nx+ny  # assume full rank
-} # else use the values supplied by user (unchanged from input)
 
 # ----- Now that df is computed, recompute fit statistics
+dev <- -2*ans$loglik
 aic <- -2*ans$loglik + 2*df
 qaic <- -2*(ans$loglik/ans$vif) + 2*df
 aicc <- aic + (2*df*(df+1))/(nan - df - 1)
@@ -301,7 +316,7 @@ ans <- list( histories=histories,
     aux=aux, 
     intervals=intervals[1:(ns-1)], 
     loglike=ans$loglik, 
-    deviance=ans$deviance, 
+    deviance=dev, 
     aic=aic, 
     qaic=qaic, 
     aicc=aicc, 

@@ -12,6 +12,12 @@ if( missing(capture) ){
     stop("Capture covariates must be specified")
 }
 
+SVD_ZERO = 0.5E-6   # This is the value that determines when a singular value is zero.  
+# I.e., when a singular value is less than this, it is considered 
+# zero.  This is key when computing rank of the 
+# variance-covariance matrix. Mark uses 0.5e-6.
+
+
 if( length(union( unique(histories), c(0,1))) > 2 ) stop("Capture histories must consist of 0's and 1's only.")
 
 # Remove rows of all zeros. These are errors, and we could stop, but I'll just remove.
@@ -78,17 +84,12 @@ if( length(control$tol) < (nx+ny) ){
 
 
 #   Do the estimation, but first allocate room for answers
-loglik <- deviance <- aic <- qaic  <- lower.ci <- upper.ci <- 0
+loglik <- lower.ci <- upper.ci <- 0
 parameters <- se.param  <- rep(0, nx+ny )
 covariance <- matrix( 0, nx+ny, nx+ny )
 p.hat <- se.p.hat <- c.hat <- se.c.hat <- matrix( 0, nan, ns )
 exit.code <- cov.code <- 0
 n.hat <- se.n.hat <- 0
-if( is.na(df) ){
-    df.estimated <- 1  # Have MRA estimate rank of var-covar matrix
-} else {
-    df.estimated <- 0  # Don't bother, df either set by user or will use nx+ny
-}
 
 #   Re-code the link specification to integers
 if( link=="logit" ){
@@ -118,13 +119,10 @@ ans <- .Fortran( "hugginsmodel",
         recapX      = as.double(recapX), 
         cap.init    = as.double(cap.init),
         recap.init  = as.double(recap.init), 
-        trace       = as.integer(control$trace),
         link        = as.integer(link.code),
         maxfn       = as.integer(control$maxfn),
         tol         = as.double(control$tol),
         loglik      = as.double(loglik), 
-        deviance    = as.double(deviance), 
-        aic         = as.double(aic),   
         parameters  = as.double(parameters),
         se.param    = as.double(se.param), 
         covariance  = as.double(covariance), 
@@ -138,7 +136,6 @@ ans <- .Fortran( "hugginsmodel",
         upper.ci    = as.double(upper.ci),
         exit.code   = as.integer(exit.code), 
         cov.code    = as.integer(cov.code), 
-        df.estimated= as.integer(df.estimated), 
         PACKAGE="mra" )
 
 if(control$trace) cat(paste("Returned from MRA. Details in MRA.LOG.\n", sep=""))
@@ -148,12 +145,38 @@ ans$se.param[ ans$se.param < 0 ] <- NA
 
 # ----- R does not preserve the matrix structures in .Fortran call.  Put matricies, 
 #   which are now vectors, back to matricies.
-ans$covariance <- matrix( ans$covariance, nrow=nx+ny ) 
+covariance     <- matrix( ans$covariance, nrow=nx+ny ) 
 ans$p.hat      <- matrix( ans$p.hat, nrow=nan )
 ans$se.p.hat   <- matrix( ans$se.p.hat, nrow=nan )
 ans$c.hat      <- matrix( ans$c.hat, nrow=nan )
 ans$se.c.hat   <- matrix( ans$se.c.hat, nrow=nan )
 
+
+# ----- Fix up number of parameters.
+if( is.na(df) ){
+  # Singular values of hessian are more stable than of covariance
+  hess <- tryCatch(solve(covariance), 
+                   error=function(x){1},
+                   warning=function(x){2})
+  if(is.matrix(hess)){
+    # likely everything ok with var-covar, but could have NA in hess
+    svals <- tryCatch(svd(hess)$d, 
+                      error=function(x){NA},
+                      warning=function(x){NA})
+    if(!all(is.na(svals))){
+      svals = svals / max(svals, na.rm=TRUE)
+      df <- sum(svals >= SVD_ZERO, na.rm=TRUE)
+    } else {
+      df <- NA
+      ans$cov.code <- 1
+    }
+  } else {
+    df <- NA
+    ans$cov.code <- 1
+  }
+} else if( df <= 0 ){
+  df <- nx+ny  # assume full rank
+} # else use the values supplied by user (unchanged from input)
 
 
 # ----- Work out exit codes.  Code is returned by VA09AD.
@@ -172,7 +195,7 @@ if( ans$exit.code==0 ){
 }
 
 if(control$algorithm == 1){
-    alg.mess <- "Optimization by VA09AD."
+    alg.mess <- "Optimization by line search."
 } else {
     alg.mess <- "Unknown optimization routine."
 }
@@ -221,14 +244,9 @@ if( ny >= 1 ){
 
 dimnames(covariance) <- list( nms, nms )
 
-# ----- Fix up number of parameters.
-if( is.na(df) ){
-    df <- ans$df.estimated   # use the rank estimated by MRAWIN
-} else if( df <= 0 ){
-    df <- nx+ny  # assume full rank
-} # else use the values supplied by user (unchanged from input)
 
 # ----- Now that df is computed, recompute fit statistics
+dev <- -2*ans$loglik
 aic <- -2*ans$loglik + 2*df
 n.eff <- nan * ns
 aicc <- aic + (2*df*(df+1))/(n.eff - df - 1)
@@ -251,7 +269,7 @@ ex.time <- (proc.time()[3] - start.sec) / 60
 ans <- list( histories=histories, 
     aux=aux, 
     loglike=ans$loglik, 
-    deviance=ans$deviance, 
+    deviance=dev, 
     aic=aic, 
     aicc=aicc, 
     capcoef=capcoef, 
@@ -259,7 +277,7 @@ ans <- list( histories=histories,
     recapcoef=recapcoef, 
     se.recapcoef=se.recapcoef,
     remove=remove,
-    covariance=ans$covariance,
+    covariance=covariance,
     p.hat=ans$p.hat, 
     se.p.hat=ans$se.p.hat, 
     c.hat=ans$c.hat, 

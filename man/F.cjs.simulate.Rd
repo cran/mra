@@ -9,9 +9,9 @@ F.cjs.simulate - Generation of capture histories that follow a CJS model.
 This function generates capture history matrices that 
 follow open Cormack-Jolly-Seber (CJS) models.  A super-population 
 approach is taken wherein individuals with unique capture and survival 
-probabilites are randomly 'born' into the 
+probabilities are randomly 'born' into the 
 realized population and captured. Any CJS model, including those with 
-heterogeneity, can be 
+heterogeneous survial or capture probabilities, can be 
 simulated.  Closed populations can also be simulated.   
 }
 
@@ -80,7 +80,7 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000,
         in the population have two offspring if \code{births.per.indiv} = 1.}
   
   \item{R}{A scalar specifying the number of replications for the simulation. A total of \code{R} 
-        independent capture history matricies will be generated. }
+        independent capture history matrices will be generated. }
 }
 
 \details{Some examples: A two-group heterogeneous population contains one group of individuals with one common
@@ -89,26 +89,26 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000,
         to 0.25, and another group with capture probability equal to 0.75 can be simulated using 
         \itemize{ \item F.cjs.simulate( rbind( rep(0.25,10),rep(0.75,10) ), rep(s,9) ). },
         where \code{s} is some survival probability between 0 and 1. If \code{s} = 1, a 
-        closed (no births or deaths) two-group heterogeneity model is simulated.  In this example, the 
+        closed (no births or deaths) two-group heterogeneous model is simulated.  In this example, the 
         realized population is sampled for 10 occasions. 
         
-        Non-equal sized hetergeneity groups can be simulated using        
+        Non-equal sized heterogeneous groups can be simulated using        
         \itemize{ \item F.cjs.simulate( rbind( matrix(0.25,1,10),matrix(0.75,9,10) ), rep(1,9) ). }
-        Using this call, approximatley 10\% of individuals in the realized population will have capture probabilities 
+        Using this call, approximately 10\% of individuals in the realized population will have capture probabilities 
         equal to 0.25, while 90\% will have capture probabilities equal to 0.75. Additional 
         groups can be included by including more rows with distinct probabilities in \code{super.p}.
         
-        A population with capture heterogeneity proportional to a vector \code{w} can be simulated using 
+        A population with heterogeneous capture probabilities proportional to a vector \code{w} can be simulated using 
         \itemize{ \item F.cjs.simulate( matrix( w/sum(x), length(w), 10), rep(s,9) ) }.  
     
-        A stocastic population that varies around a specified size of \code{N1} = 1000
+        A stochastic population that varies around a specified size of \code{N1} = 1000
         can be simulated with a statement like 
         \itemize{ \item F.cjs.simulate( rep(0.25,10), rep(s,9), N1=1000, births.per.indiv=rep((1-s)/s,9) ). }
         In this simulation, N(j)*(1-s) individuals die between each occasion, but are replaced because the N(j)*s
         surviving individuals each have (1-s)/s offspring. 
 
         Because of the super-population approach taken here, it is not possible to specify which individuals 
-        have which survival or capture probabilities, nor to guarentee that a certain number of individuals 
+        have which survival or capture probabilities, nor to guarantee that a certain number of individuals 
         in the realized population have capture probabilites equal to any particular value.  
 
 }
@@ -118,7 +118,7 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000,
         Each of these \code{R} sublists contains the following components:  
 
     \item{hists}{The simulated capture histories for a particular iteration. This is 
-        a matrix with a random number of rows (due to the stocastic nature of captures) 
+        a matrix with a random number of rows (due to the stochastic nature of captures) 
         and NS columns.}
     \item{popln.n}{A vector of length NS containing the true population sizes at each 
         sampling occasion.}}
@@ -174,7 +174,7 @@ text( std, bias, 2:10 )
 abline(h=0)
 title(main="RMSE by Sample Occasion")
 
-## Show bias when heterogeneity is present
+## Show bias when heterogeniety is present
 sim.list <- F.cjs.simulate( matrix(c(0.3,.7,.7,.7),4,ns), rep(0.9,ns-1), N1=N, R=100 ) 
 results <- t(sapply(sim.list, f.analyze))
 mean.N <- colMeans(results, na.rm=TRUE)

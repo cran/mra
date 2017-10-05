@@ -2,213 +2,15 @@
 !	MRAWIN
 !
 !	This file contains routines to build a DLL which is callable from
-!	S and R to do Capture-recapture analysis.  This was based on the
-!	previous versions of MRAWIN.
+!	S and R to do Capture-recapture analysis.  
 !
-!	This is basically Version 5 of MRAWIN.
-!
-!	Trent McDonald created this version, from MRAWIN4, by updating
-!	Bryan Manly's Fortran 77 code to Fortran 95. This version was
-!	motivated by convergence problems that Eric Reghr found in MRAWIN4.
-!
-!	Compile this with > lf95 mrawin.f95 -dll -ml msvb
-!
-!	tlm - 6dec04 - named version 5
-!
-!   Trent McDonald modified this so that it could be called from both R and S-plus.
-!   This required removing all characters from argument list.  Character strings
-!   are passed differently by R and S .Fortran.
-!   At that time Trent also converted to MS Visual Studio and Fortran .NET.
-!   Now, to compile the DLL, open the 'solution' mrawin in Visual Studio,
-!   change the 'solution configuration' to 'Release', and hit the 'start' icon.
-!   What you are doing is building the solution.  Then copy the .dll from the bin
-!   directory to where you want.
-!
-!   The compile > 'lf95 mrawin.f95 -dll -ml msvb' works for S-Plus, but not R.
-!
-!   tlm - 1July05 - named version 5.1
-!
-!   I switched to using the free G95 compiler to produce the DLL.  This compiler does
-!   not give the "Warning: 0000F changed..." message that LF95 DLL's do.
-!
-!   To compile with G95> g95 -shared -o mrawin.dll mrawin.f95
-!
-!   tlm - 31 Jan 07
-!
-!   But, now that I am using Numerical Recipies to do the SVD, compile with
-!   g95 -shared -o mrawin.dll mrawin.f95 nr.f90 nrutil.f90 nrtype.f90
-!
-!   tlm - 21 Feb 07
-!
-!   Now I am converted over to GFORTRAN so I could make this a package and post on
-!   CRAN.  To make the package, I had to include NR code in this file.
-!   i.e., we could not get the multiple files to compile on the CRAN side.
-!   So, the GFORTRAN statement that makes the
-!   DLL is :
-!   gfortran -shared -o mra.dll mrawin.f95
-!
-!   The above does not give any warnings.  Use the following to see warnings:
-!   gfortran -Wall -Wextra -shared -o mra.dll mrawin.f90
-!
-!   tlm - 18 oct 07
-!
-!   Added the Huggins model routines.
-!   This is version 5.4 of MRAWIN
-!
-!   tlm - 29 nov 07
-!
-!   Version 2.3 of MRA: Added 'trace' parameter to keep MRA from creating a log file unless it is needed. 
-!
-!   For R, this code must compile on multiple platforms.  gfortran and 
-!   the real(kind=x) syntax works on Windows, but does not work on other
-!   machines.  Bryan Ripley suggested using the old fashioned 'double precision' 
-!   rather than real(kind).  So I am.  However, for Numerical Recipies, 
-!   I am not sure this will work, so I am leaving in some of the original NR code, but 
-!   commented out.  In the remainder of this program, I changed 
-!   the following: 
-!        'real(sp)' to 'real' 
-!        'real(dp)' and 'real(kind=dbl)' to 'double precison'.  
-!        'integer(i4b)' to 'integer'
-!   To convert back, global search and replace in reverse.
-!
-!   tlm - 6-nov-09 and 30-jan-10
-!
-!   Eric Reghr was doing simulations with p's and phi's close to 1.  The logit link was 
-!   having issues with the asymptote there.  He asked that I implement the sine link.
-!   so I did.  But, I called it the cosine link. 
-!
-!   tlm 21-feb-2010 (while in Kruger NP, South Africa)
 
-
-
-!   ----- These are all the Numerical Recipie routines I need.
-!	It seems that I need to include these routines in one file for CRAN
-!	to compile.  We tried many different combinations of including and
-!	compilation order, but finally punted.
-!
-!	For local construction of a binary zip package, these 3 include statements worked fine. Must be in this order.
-!	But, now we don't need them.
-!include 'nrtype.f90'
-!include 'nrutil.f90'
-!include 'nr.f90'
-
-! ------------------------------
-MODULE nrtype
-    !INTEGER, PARAMETER :: I4B = SELECTED_INT_KIND(9)
-    !INTEGER, PARAMETER :: I2B = SELECTED_INT_KIND(4)
-    !INTEGER, PARAMETER :: I1B = SELECTED_INT_KIND(2)
-    !INTEGER, PARAMETER :: SP = KIND(1.0)
-    !INTEGER, PARAMETER :: DP = KIND(1.0D0)
-    !INTEGER, PARAMETER :: SPC = KIND((1.0,1.0))
-    !INTEGER, PARAMETER :: DPC = KIND((1.0D0,1.0D0))
-    !INTEGER, PARAMETER :: LGT = KIND(.true.)
-
-    !REAL(SP), PARAMETER :: PI=3.141592653589793238462643383279502884197_sp
-    !REAL(SP), PARAMETER :: PIO2=1.57079632679489661923132169163975144209858_sp
-    !REAL(SP), PARAMETER :: TWOPI=6.283185307179586476925286766559005768394_sp
-    !REAL(SP), PARAMETER :: SQRT2=1.41421356237309504880168872420969807856967_sp
-    !REAL(SP), PARAMETER :: EULER=0.5772156649015328606065120900824024310422_sp
-    !REAL(DP), PARAMETER :: PI_D=3.141592653589793238462643383279502884197_dp
-    !REAL(DP), PARAMETER :: PIO2_D=1.57079632679489661923132169163975144209858_dp
-    !REAL(DP), PARAMETER :: TWOPI_D=6.283185307179586476925286766559005768394_dp
-
-    real, PARAMETER :: PI=3.141592653589793238462643383279502884197
-    real, PARAMETER :: PIO2=1.57079632679489661923132169163975144209858
-    real, PARAMETER :: TWOPI=6.283185307179586476925286766559005768394
-    real, PARAMETER :: SQRT2=1.41421356237309504880168872420969807856967
-    real, PARAMETER :: EULER=0.5772156649015328606065120900824024310422
-    double precision, PARAMETER :: PI_D=3.141592653589793238462643383279502884197
-    double precision, PARAMETER :: PIO2_D=1.57079632679489661923132169163975144209858
-    double precision, PARAMETER :: TWOPI_D=6.283185307179586476925286766559005768394
-
-    TYPE sprs2_sp
-        integer :: n,len
-        real, DIMENSION(:), POINTER :: val
-        integer, DIMENSION(:), POINTER :: irow
-        integer, DIMENSION(:), POINTER :: jcol
-    END TYPE sprs2_sp
-    TYPE sprs2_dp
-        integer :: n,len
-        double precision, DIMENSION(:), POINTER :: val
-        integer, DIMENSION(:), POINTER :: irow
-        integer, DIMENSION(:), POINTER :: jcol
-    END TYPE sprs2_dp
-END MODULE nrtype
-
-!   --------------------------
-!
-!    This is not all of module NRUTIL, just the parts I need.
-!
-MODULE nrutil
-    USE nrtype
-    IMPLICIT NONE
-    INTERFACE outerprod
-        MODULE PROCEDURE outerprod_r,outerprod_d
-    END INTERFACE
-
-     CONTAINS
-
-    FUNCTION outerprod_r(a,b)
-    real, DIMENSION(:), INTENT(IN) :: a,b
-    real, DIMENSION(size(a),size(b)) :: outerprod_r
-    outerprod_r = spread(a,dim=2,ncopies=size(b)) * &
-        spread(b,dim=1,ncopies=size(a))
-    END FUNCTION outerprod_r
-
-    FUNCTION outerprod_d(a,b)
-    double precision, DIMENSION(:), INTENT(IN) :: a,b
-    double precision, DIMENSION(size(a),size(b)) :: outerprod_d
-    outerprod_d = spread(a,dim=2,ncopies=size(b)) * &
-        spread(b,dim=1,ncopies=size(a))
-    END FUNCTION outerprod_d
-
-END MODULE nrutil
-
-!   --------------------------
-
-MODULE nr
-!
-!    Only interface blocks here.  Code is in separate files in
-!    various places within Numerical Recipies.  I copied the
-!    appropriate code into this file below (search on pythag_dp)
-!
-    INTERFACE pythag
-        FUNCTION pythag_dp(a,b)
-        USE nrtype
-        double precision, INTENT(IN) :: a,b
-        double precision :: pythag_dp
-        END FUNCTION pythag_dp
-
-        FUNCTION pythag_sp(a,b)
-        USE nrtype
-        real, INTENT(IN) :: a,b
-        real :: pythag_sp
-        END FUNCTION pythag_sp
-    END INTERFACE
-END MODULE nr
-
-
-!   --------------------------
+!   -----------------------
 module constants
 !
 !    Constants used in the program
 !
-    use nrtype
     implicit none
-
-    ! Numerical recipies DP set in module NRTYPE
-    !integer, parameter :: dbl = DP              ! this needed for my routines
-                                                ! DP and dbl MUST be equal here
-                                                !   NOT NEEDED WHEN SWITCHED TO 'double precision'
-
-
-    double precision :: SVD_ZERO = 0.5E-6  ! This is the value that determines when a singular value is zero.  I.e., when a
-                                        ! singular value is less than this, it is considered zero.  This is key when
-                                        ! computing rank of the variance-covariance matrix. Mark uses 0.5e-6.
-
-
-!    integer, parameter :: logfile = 10 ! file handle of the log file, when tracing.
-    integer :: logfile = 10 ! used this assignable handle for debugging
 
 !   These are set at run time by calling subroutine set_constants
     double precision :: max_e_able     ! largest number that won't overflow when exp'ed
@@ -226,19 +28,11 @@ module constants
     logical, parameter :: central_diffs = .true.  ! whether to take central differences to approximate derivative/gradient.
                               !.False. = one-sided difference which are less accurate, but less costly
                               ! because we don't have to compute log like twice
-
-!    double precision, parameter :: delta = 0.0001   ! Delta muliplier for computing derivatives
+                              
+    double precision, PARAMETER :: PI_D=3.141592653589793238462643383279502884197
 
     double precision, parameter :: missing = -999999.0D0  ! value to signify missing value to S or R. Used, e.g., for residuals.
 
-!   Parameters needed for GOF tests, but I changed to computing GOF tests in pure R code
-!    integer, parameter :: chi_tab_rows = 4 ! # of rows in the chi square tables of mrawin_gof
-!    integer, parameter :: orow = 1  ! row number for observed values in fit_table
-!    integer, parameter :: erow = 2  ! row number for expected values in fit_table
-!    integer, parameter :: oerow = 3 ! row number for Chisq contribution in fit_table
-!    integer, parameter :: userow = 4 ! indicator for whether to use the cell in fit_table
-!    double precision, parameter :: chi_ruleofthumb = 2.0D0  ! Rule of thumb value for whether to use a cell in a GOF chi square table
-!    integer, parameter :: HL_nbins = 10 !number of bins for Hos-Lem statistic
 
     integer, parameter :: chat_rot = 5 ! C-hat rule of thumb. If all cells in a Test 2 or Test 3 Chi-square table are greater or equal this, use it in computation of c-hat
 
@@ -279,14 +73,7 @@ module globevars
     integer, dimension(:), pointer :: ptr_first, ptr_last, ptr_remove
     double precision, dimension(:), pointer :: ptr_intervals
 
-    integer :: trace  ! whether to output intermediate results. Input from user, but stored here.
-                      ! values for trace parameter, 0 = no output, 1 = output of end results, 
-                      ! 2 = results plus likelihood output, 3 = results plus likelihood plus gradient output
-                      ! If trace > 0 and if the VA09AD routine is called, printing occurs every |trace| 
-                      ! interations and also on exit.  Output is of the form: Function value, x(1), x(2),...x(n), G(1), ...G(n).
-                      ! Intermediate printing from within VA09AD is surpressed if trace > maxit+1.
-                      ! Values of X and G are surpressed from within VA09AD if trace < 0 (only final results printed).
-                      
+
     integer :: link   ! The link function to use. The link is specified in R, before calling this. 
                       ! Valid values are:
                       !     1 = logistic
@@ -327,7 +114,6 @@ subroutine cjsmod( nan, &
         group, &
         algorithm, &
         cov_meth, &
-        input_trace, &
         input_link, &
         nhat_v_meth, &
         capX, &
@@ -337,9 +123,6 @@ subroutine cjsmod( nan, &
         max_obs_fn, &
         beta_tol_vec, &
         loglik, &
-        deviance, &
-        aic, &
-        qaic, &
         c_hat, &
         chisq_vif, &
         df_vif, &
@@ -354,24 +137,10 @@ subroutine cjsmod( nan, &
         se_n_hat, &
         exit_code, &
         pos_def_code, &
-        df, &
         intervals )
 !
 !    Main routine to do CJS Mark-Recapture Analysis.  This is called from
 !    R with input parameters.
-!
-!    Note that previous versions were called MRAWIN.
-!
-!    One previous version, MRAWIN4, used direct assess files on
-!    the hard disk to store covariates and capture indicators in order to
-!    cut down on memory requirements.  This version will not work that way.  ]
-!    All vectors will be loaded into memory.  This will reduce the size of
-!    the largest problem that this program can tackle.
-!
-!    All this has now been made into an official R package.
-!    See the R help files for F.cjs.estim for up-to-date documentations
-!    on this routine.  The comments below may be out of date.
-!    tlm - 31oct07
 !
 !    Inputs:
 !    nan = number of animals = number of rows in matricies
@@ -388,9 +157,6 @@ subroutine cjsmod( nan, &
 !
 !    output:
 !    loglik = log likelihood value at the final parameters
-!    deviance = deviance
-!    aic = aic
-!    qaic = qaic
 !    c.hat = variance inflation factor
 !    chisq_vif = chisquare statistic used to compute the vif
 !    input_link = integer value specifying the link function, from the user, "input" to this routine
@@ -406,21 +172,14 @@ subroutine cjsmod( nan, &
 !    se_n_hat = nx X 1 vector of standard errors for n_hat
 !    exit_code = integer code returned by minimizer
 !    pos_def_code = code for positive definiteness of estimated covariance matrix
-!   df = number of degrees of freedom = number of real parameters = rank of VC matrix
 !
     use constants
     use globevars
     implicit none
 
-!   Can't have this if compiling with g95
-!    dll_export mrawin
-
-!    integer, parameter :: real_dbl=selected_real_kind(p=13,r=200)
-!    integer, parameter :: dbl=selected_real_kind(p=13,r=200)
-
 !    Input parameters
     integer, intent(inout), target :: nan, ns, nx, ny
-    integer, intent(inout) :: ng, algorithm, cov_meth, input_trace, max_obs_fn, input_link
+    integer, intent(inout) :: ng, algorithm, cov_meth, max_obs_fn, input_link
     integer, intent(inout), dimension(nan,ns), target :: hist
     integer, intent(inout), dimension(nan) :: group
     double precision, intent(inout), dimension(nan,ns,nx), target :: capX
@@ -431,33 +190,20 @@ subroutine cjsmod( nan, &
     double precision, intent(inout), dimension(ns), target :: intervals  ! only 1:(ns-1) elements are used
 
 !    Output parameters
-    double precision, intent(inout) :: loglik, deviance, aic, qaic, c_hat, &
+    double precision, intent(inout) :: loglik, c_hat, &
                                      chisq_vif, df_vif
     double precision, intent(inout), dimension(nx+ny) :: parameters, se_param
     double precision, intent(inout), dimension(nx+ny, nx+ny) :: covariance
     double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat, se_p_hat, se_s_hat
     double precision, intent(inout), dimension(ns) :: n_hat, se_n_hat
-    integer, intent(inout) :: exit_code, pos_def_code, nhat_v_meth, df
-!    character(len=*), intent(inout) :: message
-!   double precision, intent(inout) :: fit_chisq, fit_chidf
-!    double precision, intent(inout), dimension(nan,ns) :: residuals
-
-!   GOF variables, if wanted to compute them here
-!   double precision :: t4_chisq, t4_chidf, t5_chisq, t5_chidf, HL_chi, HL_df, roc
-!   double precision, dimension(nan,ns) :: residuals
-!   double precision, dimension(chi_tab_rows, ns)  :: t4_table
-!    double precision, dimension(chi_tab_rows, nan) :: t5_table
-!    double precision, dimension(chi_tab_rows, HL_nbins) :: HL_table
+    integer, intent(inout) :: exit_code, pos_def_code, nhat_v_meth
 
 
 !    Local parameters
-    integer :: i,j, ioerr
+    integer :: i,j
     integer, target :: np
     integer, dimension(nan, ns), target :: idead
-    character(len=10) :: label
     integer, dimension(nan), target :: first, last
-    character(len=10) :: date
-    character(len=12) :: time
 
 !    ---- Set some program constants at run time
     call set_constants()
@@ -473,7 +219,6 @@ subroutine cjsmod( nan, &
     ptr_intervals => intervals
 
 !    ---- Set maximization parameters in globevars
-    trace = input_trace
     link = input_link
     
 !    ---- Total number of parameters
@@ -499,27 +244,6 @@ subroutine cjsmod( nan, &
     end do
     ptr_dead => idead
 
-!    ---- Open a log file, if tracing, primarily for debugging
-!    if( trace /= 0 ) then 
-!        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
-!        if ( ioerr /= 0 ) then
-!            ! Cannot open log file, can't do trace
-!            trace = 0
-!        end if
-!    end if
-    
-!    if( trace /= 0 ) then
-!        !  Write header to log file.
-!        call date_and_time( date, time )
-!        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
-!        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
-!        write(logfile,9000) date, time
-!        9000 FORMAT(/" CORMACK-JOLLY-SEBER OPEN POPULATION MODEL."/ &
-!                         " Date and time of run: ",a,1x,a/)
-!    end if
-
-
-
 !    ---- If input c_hat is < 0, do Test 2 and 3.
 !        Arrive at a VIF = c_hat for the problem. Output from this routine is
 !        c_hat, chisq_vif, and df_vif. These tests are not adjusted for dead animals
@@ -527,8 +251,7 @@ subroutine cjsmod( nan, &
     if (c_hat <= 0.0D0) then
         call tests(nan, ns, hist, ng, group, c_hat, chisq_vif, i)  ! On return, i is degree of freedom for tests
     else
-        call tests(nan, ns, hist, ng, group, aic, chisq_vif, i)  ! aic is just a dummy placeholder, i is df
-!        if( trace /= 0 ) write(logfile,"(1x,a,f7.4,a)") "User specified c-hat = ", c_hat, " used."
+        call tests(nan, ns, hist, ng, group, df_vif, chisq_vif, i)  ! df_vif is just a dummy placeholder, i is df
     end if
     df_vif = i   ! convert to real
 
@@ -543,7 +266,7 @@ subroutine cjsmod( nan, &
 
     ! output is parameters, loglik, and covariance and codes. previous values are destroyed
     call CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
-        pos_def_code, df, max_obs_fn, beta_tol_vec)
+        pos_def_code, max_obs_fn, beta_tol_vec)
 
     if( exit_code == 1 ) then
 
@@ -557,16 +280,6 @@ subroutine cjsmod( nan, &
         end forall
 
 
-!        ---- Compute model results (aic, dev, etc.)
-        deviance=-2.0D0 * loglik
-        aic=deviance + 2*df
-
-        if (c_hat > 1.0D0) then
-            qaic = deviance/c_hat + 2*df
-        else
-            qaic = aic
-        end if
-
 !        ---- Calculate probability of capture and survival, and SE for both estimates
         call CJS_probs_and_vars(nan,ns,np,parameters,covariance,p_hat,s_hat, se_p_hat,se_s_hat)
 
@@ -576,9 +289,6 @@ subroutine cjsmod( nan, &
     else
 !        ---- Maximization failed
         se_param = -1.0D0
-        deviance = -1.0D0
-        aic = -1.0D0
-        qaic = -1.0D0
         p_hat = -1.0D0
         s_hat = -1.0D0
         se_p_hat = -1.0D0
@@ -586,48 +296,6 @@ subroutine cjsmod( nan, &
     end if
 
 
-!   ---- Log the results
-!    if( trace /= 0 ) then 
-!        write(logfile,9030)
-!        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
-!        write(logfile,9031) c_hat
-!        9031 format(" Standard errors adjusted for c_hat =",f7.4)
-!        if( cov_meth == 1 ) then
-!            write(logfile,9041)
-!            9041 format(" SE = approximation from numerical differentiation"/)
-!        else
-!            write(logfile,9050)
-!            9050 format(" SE = approximation from maximization"/)
-!        end if
-!    
-!        write(logfile,9060)
-!        9060 format("     Param   Estimate         SE"/ &
-!                        " ==============================="/ )
-!        do i = 1, nx+ny
-!            write(label,"(i5)") i
-!            if( i <= nx ) then
-!                label = "Cap" // adjustl(label)
-!            else
-!                label = "Sur" // adjustl(label)
-!            end if
-!    
-!            WRITE(logfile,9040) label,parameters(i),se_param(i)
-!            9040 format (1X,A9,1x,2(F10.6,1x))
-!    
-!        end do
-!    
-!        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic, qaic
-!         9035 FORMAT(" ======================================="// &
-!                    " Number of parameters (df) =",I8/ &
-!                    "    Number of coefficients =",I8/ &
-!                    "            Log-likelihood =",F14.6/ &
-!                    "                  Deviance =",F14.6/ &
-!                    "                       AIC =",F14.6/ &
-!                    "                      QAIC =",F14.6)
-!    
-!    !    ---- Clean up
-!        close(logfile)
-!    end if
 
 end subroutine cjsmod
 
@@ -648,13 +316,10 @@ subroutine hugginsmodel( &
         capY, &
         p_init, &
         c_init, &
-        input_trace, &
         input_link, &
         maxfn, &
         beta_tol_vec, &
         loglik, &
-        deviance, &
-        aic, &
         parameters, &
         se_param, &
         covariance, &
@@ -667,37 +332,24 @@ subroutine hugginsmodel( &
         n_ci_low, &
         n_ci_high, &
         exit_code, &
-        pos_def_code, &
-        df )
+        pos_def_code )
 
 !
 !    Main routine to estimate Huggins closed population Mark-Recapture model.
 !    This is the entry point for R.  I.e., R calls this and supplies the input parameters.
-!
-!    This routine is very similar to 'cjs' above.  I initially copied 'cjs', then
-!    modified it.
-!
 !    Some input parameters:
 !        capX = X matrix for initial captures
 !        capY = X matrix for recaptures.
 !        p_hat = returned probabilities of initial capture
 !        c_hat = returned probabilities of recapture
 !
-!    This is part of the "MRA" package, and as such is documented in
-!    the file 'F.huggins.estim.Rd'.
-!    tlm - 31oct07
-!
     use constants
     use globevars
     implicit none
 
-!       Can't have this if compiling with g95 or gfortran, but use with Lahey
-!    dll_export huggins
-
-
 !    Input parameters
     integer, intent(inout), target :: nan, ns, nx, ny
-    integer, intent(inout) :: algorithm, cov_meth, input_trace, maxfn, input_link
+    integer, intent(inout) :: algorithm, cov_meth, maxfn, input_link
     integer, intent(inout), dimension(nan,ns), target :: hist
     integer, intent(inout), dimension(nx), target :: remove   ! = 1 to remove a capture covar from recapture equation
     double precision, intent(inout), dimension(nan,ns,nx), target :: capX  ! initial capture covars
@@ -708,44 +360,22 @@ subroutine hugginsmodel( &
     
 
 !    Output parameters
-    double precision, intent(inout) :: loglik, deviance, aic
+    double precision, intent(inout) :: loglik
     double precision, intent(inout), dimension(nx+ny) :: parameters, se_param
     double precision, intent(inout), dimension(nx+ny, nx+ny) :: covariance
     double precision, intent(inout), dimension(nan,ns) :: p_hat, se_p_hat, c_hat, se_c_hat
     double precision, intent(inout) :: n_hat, se_n_hat, n_ci_low, n_ci_high
-    integer, intent(inout) :: exit_code, pos_def_code, nhat_v_meth, df
+    integer, intent(inout) :: exit_code, pos_def_code, nhat_v_meth
 
 !    Local parameters
-    integer :: i, ioerr
-    !integer :: j, k   ! debugging
+    integer :: i
     integer, target :: np
-    character(len=10) :: label
     integer, dimension(nan), target :: first
-    character(len=10)  :: date
-    character(len=12) :: time
 
 !    ---- Set maximization parameters in globevars
-    trace = input_trace
     link = input_link
 
-!    ---- Open a log file, if called for by the user
-!    if (trace /= 0) then 
-!        OPEN(logfile,FILE="mra.log",status="replace",iostat=ioerr)
-!        if ( ioerr /= 0 ) then
-!            ! Cannot open log file, so can't do trace
-!            trace = 0
-!        end if
-!    end if
 
-!    if (trace /= 0) then
-!        ! ---- Write header to log file.
-!        call date_and_time( date, time )
-!        date = date(1:4) // "-" // date(5:6) // "-" // date(7:8)
-!        time = time(1:2) // ":" // time(3:4) // ":" // time(5:10)
-!        write(logfile,9000) date, time
-!        9000 FORMAT(/" HUGGINS CLOSED POPULATION MODEL."/ &
-!                         " Date and time of run: ",a,1x,a/)
-!    end if
 
     
 !    ---- Set some program constants at run time
@@ -783,7 +413,7 @@ subroutine hugginsmodel( &
 
    
     call Huggins_estim(ptr_np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
-        pos_def_code, df, maxfn, beta_tol_vec)
+        pos_def_code, maxfn, beta_tol_vec)
 
     
     
@@ -800,10 +430,6 @@ subroutine hugginsmodel( &
             se_param(i) = sqrt( covariance(i,i) )
         end forall
 
-!        ---- Compute model fits (aic, dev, etc.)
-        deviance=-2.0D0 * loglik
-        aic=deviance + 2.0D0*df
-
 !        ---- Calculate probability of initial and subsequent captures, and SE for both
         call huggins_pc_hat(nan,ns,nx,ny,ptr_np,parameters,covariance,p_hat,se_p_hat,c_hat,se_c_hat)
 
@@ -812,8 +438,6 @@ subroutine hugginsmodel( &
     else
 !        ---- Maximization failed
         se_param = -1.0D0
-        deviance = -1.0D0
-        aic = -1.0D0
         p_hat = -1.0D0
         se_p_hat = -1.0D0
         c_hat = -1.0D0
@@ -823,57 +447,6 @@ subroutine hugginsmodel( &
     end if
 
 
-!   ---- Log the results
-!    if ( trace /= 0 ) then 
-!        write(logfile,9030)
-!        9030 FORMAT(/" FINAL ESTIMATES OF PARAMETERS WITH STANDARD ERRORS"/)
-!        if( cov_meth == 1 ) then
-!            write(logfile,9041)
-!            9041 format(" SE = approximation from numerical differentiation"/)
-!        else
-!            write(logfile,9050)
-!            9050 format(" SE = approximation from maximization"/)
-!        end if
-!    
-!        write(logfile,9060)
-!        9060 format("     Param   Estimate         SE"/ &
-!                        " ==============================="/ )
-!        do i = 1, nx
-!            write(label,"(i5)") i
-!            label = "  Cap" // adjustl(label)
-!    
-!            WRITE(logfile,9040) label,parameters(i),se_param(i)
-!            9040 format (1X,A9,1x,2(F10.6,1x))
-!        end do
-!        if (ny >= 1) then
-!            do i = nx+1, nx+ny
-!
-!         write(label,"(i5)") (i - nx)
-!                label = "Recap" // adjustl(label)
-!    
-!                WRITE(logfile,9040) label,parameters(i),se_param(i)
-!            end do
-!        end if
-!    
-!        WRITE(logfile,9035) df, nx+ny, loglik, deviance, aic
-!         9035 FORMAT(" ======================================="// &
-!                    " Number of parameters (df) =",I8/ &
-!                    "    Number of coefficients =",I8/ &
-!                    "            Log-likelihood =",F14.6/ &
-!                    "                  Deviance =",F14.6/ &
-!                    "                       AIC =",F14.6)
-!    
-!        WRITE(logfile,9100) n_hat, se_n_hat, n_ci_low, n_ci_high
-!         9100 FORMAT(" ======================================="// &
-!                    "  Population size estimate =",F14.6/ &
-!                    "       SE(Population size) =",F14.6/ &
-!                    "     Lower 95% CI endpoint =",F14.6/ &
-!                    "     Upper 95% CI endpoint =",F14.6)
-!    
-!    !    ---- Clean up
-!        close(logfile)
-!        
-!    end if    
 
 end subroutine hugginsmodel
 
@@ -881,7 +454,7 @@ end subroutine hugginsmodel
 ! ---------------------------------------------------------------------------------------------
 
 subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, cov_npd, &
-    df, max_fn, beta_tol_vec )
+    max_fn, beta_tol_vec )
 !
 !    Purporse: to maximize the capture-recapture likelihood
 !
@@ -906,7 +479,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
     use globevars
     implicit none
 
-    integer, intent(inout) :: np, algorithm, exit_code, cov_npd, cov_meth, df
+    integer, intent(inout) :: np, algorithm, exit_code, cov_npd, cov_meth
     integer, intent(inout) :: max_fn  ! upon output, max_fn is the actual number of function evaluations
 
     double precision, intent(inout) :: loglik
@@ -920,7 +493,6 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
     double precision, dimension(np*(np+1)/2) :: h ! hessian, see VA09AD for description of format
     double precision, dimension(3*np) :: W
     double precision, external :: CJS_loglik
-    integer, external :: matrank
     external CJS_obj  ! objective function for minimization
     integer :: ij, i, j
 
@@ -937,7 +509,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         case (:1, 3:)
 
             ! The algorithm used by Mark
-            call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, max_fn, trace, exit_code)
+            call VA09AD(CJS_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, max_fn, exit_code)
 
         case (2)
 
@@ -948,21 +520,9 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
 
     if( .not.(exit_code == 1)) then
         ! Maximization did not work for some reason, do not run any of the hessian or covariance routines
-!        if ( trace  /= 0) then
-!            write(logfile,*)
-!            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
-!            if (exit_code == 0) then
-!                write(logfile,*) "     Hessian not positive definite."
-!            else if (exit_code == 2) then
-!                write(logfile,*) "     Underflow/rounding error."
-!            else if (exit_code == 3) then
-!                write(logfile,*) "     Did not converge - too many function evaluations."
-!            end if
-!        end if
         parameters = 0
         covariance = -1
         cov_npd = 1
-        df = 0
     else
         ! Maximization did converge, compute covariances
 
@@ -974,7 +534,6 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
         ! ---- Hessian and Covariance Section
         if( cov_meth == 1 ) then
 
-!            if( trace /= 0) write(logfile,*) "Calling comp_hessian..."
             ! compute hessian matrix by numeric 2nd derivatives.  Covariance is actually the
             ! Hessian.  I'm just using covarinace as storage here
             call comp_hessian(CJS_loglik, np, parameters, loglik, covariance)
@@ -982,9 +541,9 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
 
         else
             ! Use the returned Hessian
-            ! Routine MC11FD inverts h and converts from factorized form to regular (triangular) form, all at once
+            ! Routine invfactmat inverts h and converts from factorized form to regular (triangular) form, all at once
             ij = np
-            call MC11FD(h,np,ij)
+            call invfactmat(h,np,ij)
             cov_npd = 0
 
             ! Put into a square
@@ -1005,45 +564,13 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
             call syminv(covariance, np, cov_npd)
         end if
 
-        ! ------ Compute number of parameters = rank of hessian matrix.
-        !   Gary White does this, computes rank, on the hessian prior to inverting.
-        !   I do not fully understand this, but the singular values are much smaller and better
-        !   behaved when computed on hessian than when computed on inverted hessian. So,
-        !   we compute singular value decomposition on hessian, then count number of
-        !   non-zero SV's.  Later, we invert the hessian and check for non-positive definitness.
-        !
-        !       cov_npd > 0 if inversion for cov.meth = 2 fails
-        !       df = 1 if we want to estimate number of parameters (the norm)
-        !       df = 0 means don't bother, R sets df to user specified value or np
-
-        if( cov_npd == 0 .and. df > 0 ) then
-            !df = np
-            df = matrank(covariance, np, np)
-!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
-        else
-!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
-        end if
-
 
         ! ---- Now invert the negative matrix of 2nd derivatives
         call syminv(covariance, np, cov_npd)
 
-!        if( trace /= 0 ) then 
-!            write(logfile,*) " ----- Coefficient covariance matrix -----"
-!            do i = 1, np
-!                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
-!            end do
-!        end if
-
         !   Could check for positive definiteness here
 
 
-        if( cov_npd == 1 ) then
-!            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
-            !df = 0
-        else if (cov_npd == 2) then
-!            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
-        end if
     end if
 
 
@@ -1051,7 +578,7 @@ end subroutine
 
 ! ---------------------------------------------------------------------------------------------
 
-subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, cov_npd, df, &
+subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, cov_npd, &
     maxfn, beta_tol_vec )
 !
 !    Purporse: to maximize the Huggins closed popln capture-recapture likelihood
@@ -1080,7 +607,7 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
     use globevars
     implicit none
 
-    integer, intent(inout) :: np, algorithm, exit_code, cov_npd, cov_meth, df, maxfn
+    integer, intent(inout) :: np, algorithm, exit_code, cov_npd, cov_meth, maxfn
 
     double precision, intent(inout) :: loglik
     double precision, intent(inout), dimension(np) :: parameters
@@ -1093,7 +620,6 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
     double precision, dimension(3*np) :: W
 
     double precision, external :: Huggins_loglik  ! Needed for covariance estimation
-    integer, external :: matrank
 
     external Huggins_obj  ! objective function for minimization
 
@@ -1112,7 +638,7 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
         case (:1, 3:)
 
             ! The algorithm used by Mark
-            call VA09AD(Huggins_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, maxfn, trace, exit_code)
+            call VA09AD(Huggins_obj,np,parameters,loglik,g,h,W, dfn, beta_tol_vec, mode, maxfn, exit_code)
 
         case (2)
 
@@ -1123,21 +649,9 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
     if( .not.(exit_code == 1)) then
         ! Maximization did not work for some reason, do not run any of the hessian or covariance routines
-!        if( trace /= 0 ) then
-!            write(logfile,*)
-!            write(logfile,*) " *** Likelihood maximization failed: Exit_code = ", exit_code
-!            if (exit_code == 0) then
-!                write(logfile,*) "     Hessian not positive definite."
-!            else if (exit_code == 2) then
-!                write(logfile,*) "     Underflow/rounding error."
-!            else if (exit_code == 3) then
-!                write(logfile,*) "     Did not converge - too many function evaluations."
-!            end if
-!        end if 
         parameters = 0
         covariance = -1
         cov_npd = 1
-        df = 0
     else
         ! Maximization did converge, compute covariances
 
@@ -1156,9 +670,9 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
 
         else
             ! Use the returned Hessian
-            ! Routine MC11FD inverts h and converts from factorized form to regular (triangular) form, all at once
+            ! Routine invfactmat inverts h and converts from factorized form to regular (triangular) form, all at once
             ij = np
-            call MC11FD(h,np,ij)
+            call invfactmat(h,np,ij)
             cov_npd = 0
 
             ! Put into a square
@@ -1187,37 +701,15 @@ subroutine Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance
         !   non-zero SV's.  Later, we invert the hessian and check for non-positive definitness.
         !
         !       cov_npd > 0 if inversion for cov.meth = 2 fails
-        !       df = 1 if we want to estimate number of parameters (the norm)
-        !       df = 0 means don't bother, R sets df to user specified value or np
-
-        if( cov_npd == 0 .and. df > 0 ) then
-            df = matrank(covariance, np, np)
-!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters = ", df
-        else
-!            if( trace /= 0 ) write(logfile,*) "Number of estimated parameters =  USER OVERRIDE"
-        end if
 
 
         ! ---- Now invert the negative matrix of 2nd derivatives
         call syminv(covariance, np, cov_npd)
 
-!        if( trace /= 0 ) then
-!            write(logfile,*)
-!            write(logfile,*) " ----- Coefficient covariance matrix -----"
-!            do i = 1, np
-!                write(logfile,"(1000(g20.10,','))") (covariance(i,j), j=1,np)
-!            end do
-!        end if
-        
+
         !   Could check for positive definiteness here
 
 
-        if( cov_npd == 1 ) then
-!            if( trace /= 0 ) write(logfile,*) "COVARIANCE MATRIX IS SINGULAR.  Error code= ", cov_npd
-            df = 0
-        else if (cov_npd == 2) then
-!            if( trace /= 0 ) write(logfile,*) "COVARIANCE IS NOT POSITIVE DEFINITE. Error code= ", cov_npd
-        end if
     end if
 
 
@@ -1249,9 +741,6 @@ SUBROUTINE CJS_obj(p,beta,lnlik,grad)
 
     double precision, external :: CJS_loglik
 
-    !integer :: i   ! debugging var
-
-
 !    Calculate the log-likelihood
     lnlik = -1.0D0 * CJS_loglik(p, beta)
 
@@ -1264,7 +753,6 @@ end subroutine
 
 ! ------------------------------------------------------------------------------------
 double precision function CJS_loglik(p, beta)
-!double precision function CJS_loglik(p, beta)  THIS DOES NOT WORK IN GFORTRAN, but worked in G95 and Lahey
 !
 !         Purpose: to compute the log-likelihood, given parameters
 !
@@ -1306,15 +794,13 @@ double precision function CJS_loglik(p, beta)
     cap_beta = beta(1:ptr_nx)
     surv_beta = beta( (ptr_nx+1):p )
 
+    ! initialize init1 and init2 to kill uninitialized warning at compile
+    ! Assuming first(i) >= 0, these values are always overwritten in do loop below.
+    init1 = 1
+    init2 = 1
+    
     xlnlik=0.0D0
     do i=1,ptr_nan
-
-        ! ---- Debugging: ptr_hist(i,j) should never be 2, only 0 and 1
-        !do j=1,ptr_ns
-        !    if( ptr_hist(i,j) == 0 .or. ptr_hist(i,j) == 1 ) cycle
-        !    write(logfile,*) "**** Invalid capture history with a 2 ***: Animal", i, 
-        !       " Occasion", j, " Hist value=", ptr_hist(i,j)
-        !end do
 
         ! ---- First part of the log-likelihood function, between first and last 1
         sum1=0.0D0
@@ -1382,29 +868,8 @@ double precision function CJS_loglik(p, beta)
             end do
             sum2=log(sum2)
         endif
-
-
-        ! inserted debugging code. Set PRNT in constants module
-!        if( trace >= 2 ) then
-!            write(logfile,'(1x,a,5(1x,a,i5))') "---------", "i=", i, "init1=", init1, "init2=", init2, "first(i)=", &
-!                ptr_first(i), "last(i)=", ptr_last(i)
-!            write(logfile,*) "cap_coefs=", (cap_beta(j), j=1,ptr_nx)
-!            write(logfile,*) "surv_coefs=", (surv_beta(j), j=1,ptr_ny)
-!            write(logfile,62) "vpij=", (vpij(j), j=2,ptr_ns)
-!            write(logfile,62) "vphiij=", (vphiij(j), j=1,ptr_ns-1)
-!            write(logfile,63) "sum1=", sum1, " sum2=", sum2
-!            !61  format(1x,a,25(1x,f4.2))
-!            62  format(1x,a,25(1x,f6.3))
-!            63  format(1x,a, f12.7,a, f12.7)
-!        end if
-
         xlnlik=xlnlik+sum1+sum2
     end do
-
-!    if (trace >= 2) then
-!        write(logfile,*)
-!        write(logfile,*) "Log likelihood = ", xlnlik
-!    end if
 
     CJS_loglik = xlnlik
 
@@ -1465,15 +930,6 @@ SUBROUTINE CJS_gradient(p, beta, f, grad)
 
     end do
 
-!    if(trace >= 3) then
-!        write(logfile,*) "Gradient vector:"
-!        write(logfile,*) "    i         coef     Gradient"
-!        write(logfile,*) "----- ------------ ------------"
-!        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
-!        10 format(1x,i5,1x,2F12.7)
-!    end if
-
-
 end subroutine
 
 
@@ -1504,28 +960,8 @@ SUBROUTINE Huggins_obj(p,beta,lnlik,grad)
 
     double precision, external :: Huggins_loglik
 
-    !debugging
-    integer :: i
-
-!    Calculate the log-likelihood
-!    if( trace >= 2 ) then 
-!        write(logfile,*) "*****CALCULATING LOG LIKE******"
-!        write(logfile,*) "p=", p, "beta=", (beta(i), i=1,p)
-!
-!        close(logfile)
-!        open(logfile,file='mra.log',status='old',access='append')
-!        
-!    end if
-    
     lnlik = -1.0D0 * Huggins_loglik(p, beta)
 
-!    Calculate the gradient
-!    if( trace >= 3 ) then
-!        write(logfile,*) "*****CALLING GRADIENT******"
-!        close(logfile)
-!        open(logfile,file='mra.log',status='old',access='append')
-!    end if
-    
     call Huggins_gradient(p, beta, lnlik, grad)
 
 end subroutine
@@ -1557,7 +993,6 @@ double precision function Huggins_loglik(p, beta)
     use globevars
     implicit none
 
-    !double precision :: Huggins_loglik
     integer, intent(inout) :: p    ! number of parameters
     double precision, intent(inout), dimension(p) :: beta    ! parameters
 
@@ -1577,12 +1012,6 @@ double precision function Huggins_loglik(p, beta)
     xlnlik=0.0D0
     do i=1,ptr_nan
 
-        ! ---- Debugging: ptr_hist(i,j) should never be 2, only 0 and 1
-        !do j=1,ptr_ns
-        !    if( ptr_hist(i,j) == 0 .or. ptr_hist(i,j) == 1 ) cycle
-        !    write(logfile,*) "**** Invalid capture history with a 2 ***: Animal", i, " Occasion", j, " Hist value=", ptr_hist(i,j)
-        !end do
-        !if (i==1) write(logfile,*) "animal=", i, "----------------------------------------"
 
         ! ---- First part of the log-likelihood function, between initial occasion and first capture
         sum_ppart=0.0D0
@@ -1618,19 +1047,10 @@ double precision function Huggins_loglik(p, beta)
             end do
         end if
 
-        ! Compute log-likelihood contribution for animal i
-        !write(logfile, *) "Done with animal ", i
-        !write(logfile, *) "sum_part = ", sum_ppart, "sum_cpart = ", sum_cpart, "denom =", denom
-        !write(logfile, *) "---------------------------------------------------------------------------------------"
-        
+
         xlnlik = xlnlik + sum_ppart + sum_cpart - denom
 
     end do
-
-!    if (trace >= 2) then
-!        write(logfile,*)
-!        write(logfile,*) "Log likelihood = ", xlnlik
-!    end if
 
     Huggins_loglik = xlnlik
 
@@ -1693,14 +1113,6 @@ SUBROUTINE Huggins_gradient(p, beta, f, grad)
 
            end do
 
-!    if(trace >= 3) then
-!        write(logfile,*) "Gradient vector:"
-!        write(logfile,*) "    i         coef     Gradient    1-sided G"
-!        write(logfile,*) "----- ------------ ------------ ------------"
-!        write(logfile,10) (i, beta2(i), grad(i), i=1,p)
-!        10 format(1x,i5,1x,3F12.7)
-!    end if
-
 
 end subroutine
 
@@ -1757,9 +1169,6 @@ subroutine procap(pij, i, j, coef, nx)
     end if
     
 
-!    if( i <= 2 ) then
-!        write(logfile,*) "  Cap", i, j, ":", (coef(k), "*", ptr_capX(i,j,k), " + ", k=1,nx), "p=", pij
-!    end if
 
 end subroutine
 
@@ -1793,7 +1202,7 @@ subroutine prorecap(cij, i, j, coef, nx, ny, remove)
     integer, intent(in), dimension(nx) :: remove
 
     double precision, external :: logit_link, sine_link, hazard_link
-    double precision :: sum, z
+    double precision :: sum
     integer :: k
 
     sum = 0.0D0
@@ -1825,11 +1234,6 @@ subroutine prorecap(cij, i, j, coef, nx, ny, remove)
     end if
 
 
-!    if (i==1) then
-!        write(logfile,*) "Recap", i, j, ":", (ptr_capY(i,j,k), k=1,ny), "p=", cij
-!        write(logfile,*) "     nx=", nx, "ny=", ny, "coef=", (coef(k),k=1,nx+ny)
-!    end if
-
 end subroutine
 
 ! -------------------------------------------------------------------
@@ -1858,7 +1262,7 @@ subroutine prosur(sij, i, j, coef, ny)
     double precision, intent(out) :: sij
 
     double precision, external :: logit_link, sine_link, hazard_link
-    double precision :: sum, z
+    double precision :: sum
     integer :: k
 
     sum = 0.0D0
@@ -1919,11 +1323,10 @@ double precision function sine_link( eta )
 !   Compute the inverse of the cosine link. 
 !   eta is the linear predictor
 !
-    use nrtype ! for PI_D constant = value of pie.
+
     use constants
     implicit none
     
-    !double precision :: sine_link
     double precision :: eta
     
     if( eta < -pi_mult ) then
@@ -2039,9 +1442,9 @@ end subroutine
 
 ! ---------------------------------------------------------------------------------------------
 
-SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
-! Parameters in call from CJS: CJS_obj,    np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, max_fn, trace, exit_code
-! Parameters in call from Hug: Huggins_obj,np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, maxfn, trace, exit_code
+SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
+! Parameters in call from CJS: CJS_obj,    np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, max_fn,exit_code
+! Parameters in call from Hug: Huggins_obj,np,parameters,loglik,g,h,W, -2.0D0, beta_tol_vec, 1, maxfn,exit_code
 !
 !    Purpose: to maximize the capture-recapture log likelihood using the VA09AD algorithm
 !    from HSL.  This is the same routine used by MARK.  See hsl.rl.ac.uk for the HSL library.
@@ -2074,11 +1477,6 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 !        If mode = 3, VA09 assumes that the hessian has been set in H in product form, in which case the
 !        the contents of h are passed on unchanged.
 !    maxfn = maximum number of calls to funct allowed.
-!    iprint = integer controlling printing.  Printing occurs every |iprint| interations and also on exit.  Output
-!        is of the form:
-!        Function value, x(1), x(2),...x(n), G(1), ...G(n).
-!        Nothing is printed when iprint = 0.  Intermediate printing is surpressed with iprint > maxfn+1.
-!        values of X and G are surpressed if iprint < 0
 !    iexit = integer reason for exiting.
 !        if iexit = 0 (mode = 2 only) the estimate of the hessian matrix is not positive definite.
 !        if iexit = 1, a normal exit has been made in which |dx(i)| < eps(i) for all i, where dx(i) is
@@ -2088,12 +1486,10 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
 !        if iexit = 3, funct has been called maxfn times.
 !
 !
-!    Modified by Trent McDonald for Fortran 95 conventions.
-    use constants, only: logfile
     implicit none
 
     double precision, intent(inout) :: DFN,F
-    integer, intent(inout) :: IEXIT,IPRINT,MAXFN,MODE, N
+    integer, intent(inout) :: IEXIT,MAXFN,MODE, N
     double precision, intent(inout), dimension(n) :: EPS,G,X
     double precision, intent(inout), dimension(n*(n+1)/2) :: H
     double precision, intent(inout), dimension(3*n) :: W
@@ -2105,20 +1501,11 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
     integer :: One = 1
     integer :: Zero = 0
     double precision :: ZeroD = 0.0
-    
+    double precision :: DC
 
-    double precision, external :: FD05AD
-
-!    EXTERNAL MC11AD,MC11BD,MC11ED
-!    INTRINSIC DABS,DSQRT,MOD
-
-!     Following, down to the end of the routine, is unaltered code from HSL, except that I
-!    changed all the "0.D0" and the like to "0.0_dbl" and the like.
-
-        
-        EPSMCH = FD05AD(1)*10.0D0
-!        IF (IPRINT.NE.0) WRITE (logfile,FMT=1000)
- 1000   FORMAT (' ENTRY TO VA09AD',/)
+        Z = 0 
+        DC = epsilon( DC )
+        EPSMCH = DC*10.0D0
         NN = N* (N+1)/2
         IG = N
         IGG = N + N
@@ -2131,8 +1518,11 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         DO 5 I = 1,N
           DO 6 J = 1,I
             IJ = IJ - 1
-    6     H(IJ) = 0.0D0
-    5   H(IJ) = 1.0D0
+            H(IJ) = 0.0D0
+    6     CONTINUE     
+          H(IJ) = 1.0D0
+    5   CONTINUE   
+	    
         GO TO 15
    10   CONTINUE
         CALL MC11BD(H,N,IR)
@@ -2147,24 +1537,17 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         IF (DFN.LT.0.0D0) DF = ABS(DF*F)
         IF (DF.LE.0.0D0) DF = 1.0D0
    20   CONTINUE
-        IF (IPRINT.EQ.0) GO TO 21
-        IF (MOD(ITN,IPRINT).NE.0) GO TO 21
-!        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
-! 1001   FORMAT (1x,"Iteration=",I5,1x,"Function evals=",I5,1x,"Exit code=",I5,1x,"Loglik=",D24.16)
-!        WRITE (logfile,FMT=1002) "F=", F
-! 1002   FORMAT (1x,A,1x,500(1x,5D24.16,/))
-!        IF (IPRINT.LT.0) GO TO 21
-!        WRITE (logfile,FMT=1002) "X=", (X(I),I=1,N)
-!        WRITE (logfile,FMT=1002) "G=", (G(I),I=1,N)
-   21   CONTINUE
         ITN = ITN + 1
         DO 22 I = 1,N
-   22   W(IG+I) = G(I)
+          W(IG+I) = G(I)
+   22   CONTINUE
         CALL MC11ED(H,N,G,W,IR)
         GS = 0.0D0
         DO 29 I = 1,N
           W(IS+I) = -G(I)
-   29   GS = GS - G(I)*W(IG+I)
+          GS = GS - G(I)*W(IG+I)
+   29   CONTINUE
+        
         IEXIT = 2
         IF (GS.GE.0.0D0) GO TO 92
         GS0 = GS
@@ -2181,12 +1564,16 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         DO 31 I = 1,N
           Z = ALPHA*W(IS+I)
           IF (ABS(Z).GE.EPS(I)) ICON = 1
-   31   X(I) = X(I) + Z
+          X(I) = X(I) + Z
+   31   CONTINUE
+        
         CALL FUNCT(N,X,FY,G)
         IFN = IFN + 1
         GYS = 0.0D0
         DO 32 I = 1,N
-   32   GYS = GYS + G(I)*W(IS+I)
+          GYS = GYS + G(I)*W(IS+I)
+   32   CONTINUE
+        
         IF (FY.GE.F) GO TO 40
         IF (ABS(GYS/GS0).LE..9D0) GO TO 50
         IF (GYS.GT.0.0D0) GO TO 40
@@ -2200,7 +1587,8 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         GO TO 30
    40   CONTINUE
         DO 41 I = 1,N
-   41   X(I) = X(I) - ALPHA*W(IS+I)
+          X(I) = X(I) - ALPHA*W(IS+I)
+   41   CONTINUE
         IF (ICON.EQ.0) GO TO 92
         Z = 3.0D0* (F-FY)/ALPHA + GYS + GS
         ZZ = SQRT(Z**2-GS*GYS)
@@ -2216,14 +1604,16 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         DGS = GYS - GS0
         DO 51 I = 1,N
           W(IGG+I) = G(I)
-   51   G(I) = -W(IG+I)
+          G(I) = -W(IG+I)
+   51   CONTINUE
         IF (DGS+ALPHA*GS0.GT.0.0D0) GO TO 60
         SIG = 1.0D0/GS0
         IR = -IR
         
         CALL MC11AD(H,N,G,SIG,W,IR,One,ZeroD)
         DO 52 I = 1,N
-   52   G(I) = W(IGG+I) - W(IG+I)
+          G(I) = W(IGG+I) - W(IG+I)
+   52   CONTINUE
         SIG = 1.0D0/ (ALPHA*DGS)
         IR = -IR
         CALL MC11AD(H,N,G,SIG,W,IR,Zero,ZeroD)
@@ -2234,25 +1624,23 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IPRINT,IEXIT)
         CALL MC11AD(H,N,G,SIG,W,IR,One,EPSMCH)
         Z = DGS*ZZ - 1.0D0
         DO 61 I = 1,N
-   61   G(I) = W(IGG+I) + Z*W(IG+I)
+          G(I) = W(IGG+I) + Z*W(IG+I)
+   61   CONTINUE
         SIG = 1.0D0/ (ZZ*DGS**2)
         CALL MC11AD(H,N,G,SIG,W,IR,Zero,ZeroD)
    70   CONTINUE
         DO 71 I = 1,N
-   71   G(I) = W(IGG+I)
+          G(I) = W(IGG+I)
+   71   CONTINUE
         GO TO 20
    92   CONTINUE
         DO 91 I = 1,N
-   91   G(I) = W(IG+I)
+          G(I) = W(IG+I)
+   91   CONTINUE
    90   CONTINUE
-!       Trent added the following line so that number of function evaluations is returned. 
-!       Careful: this means MAXFN must be a variable in the calling routine, using constant, like 1000, will not work.   
+!       The following line returns the number of function evaluations. 
+!       Careful: this means MAXFN must be a variable in the calling routine, don't use a constant like 1000.   
         MAXFN = IFN    
-!        IF (IPRINT.EQ.0) RETURN
-!        WRITE (logfile,FMT=1001) ITN,IFN,IEXIT,F
-!        !WRITE (logfile,FMT=1002) "Final F=", F
-!        WRITE (logfile,FMT=1002) "Final X=", (X(I),I=1,N)
-!        WRITE (logfile,FMT=1002) "Final G=", (G(I),I=1,N)
         RETURN
 
 end subroutine
@@ -2271,21 +1659,6 @@ double precision FUNCTION FD05AD(INUM)
 
     double precision, save, dimension(5) :: DC
 
-    !write(logfile,*) "In fd05ad: dbl=", dbl, "kind(fd05ad)=", kind(fd05ad)
-
-!      SAVE :: DC
-!      DC(1) THE SMALLEST POSITIVE NUMBER: 1.0 + DC(1) > 1.0.
-!      DC(2) THE SMALLEST POSITIVE NUMBER: 1.0 - DC(2) < 1.0.
-!      DC(3) THE SMALLEST NONZERO +VE REAL NUMBER.
-!    DC(4) THE SMALLEST FULL PRECISION +VE REAL NUMBER.
-!    DC(5) THE LARGEST FINITE +VE REAL NUMBER.
-
-!    I commented these DATA lines out, thinking that huge(), tiny(), etc. would do the job.
-!      DATA DC(1)/2.2204460492504D-16/
-!      DATA DC(2)/1.1102230246253D-16/
-!C     DATA DC(3)/4.9406564584126D-324/  ! this one was commented out in the origninal code from HSL
-!      DATA DC(4)/2.2250738585073D-308/
-!      DATA DC(5)/1.7976931348622D+308/
 
       DC(1) = epsilon( DC(1) )
       DC(2) = epsilon( DC(1) )   ! Not sure dc(2) and dc(3) are right. but never use here, so okay.
@@ -2344,11 +1717,13 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
       IF (MK.EQ.0) GO TO 10
       DO 7 I = 1,N
         IF (A(IJ).NE.0.0D0) TI = TI + W(I)**2/A(IJ)
-    7 IJ = IJ + NP - I
+        IJ = IJ + NP - I
+    7 CONTINUE
       GO TO 20
    10 CONTINUE
       DO 11 I = 1,N
-   11 W(I) = Z(I)
+        W(I) = Z(I)
+   11 CONTINUE
       DO 15 I = 1,N
         IP = I + 1
         V = W(I)
@@ -2361,13 +1736,18 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
         IF (I.EQ.N) GO TO 14
         DO 13 J = IP,N
           IJ = IJ + 1
-   13   W(J) = W(J) - V*A(IJ)
+          W(J) = W(J) - V*A(IJ)
+   13   CONTINUE
    14   IJ = IJ + 1
    15 CONTINUE
    20 CONTINUE
       IF (IR.LE.0) GO TO 21
       IF (TI.GT.0.0D0) GO TO 22
-      IF (MK-1) 40,40,23
+      IF ((MK-1).GT.0.0D0) THEN
+        GO TO 23
+      ELSE 
+        GO TO 40
+      END IF
    21 TI = 0.D0
       IR = -IR - 1
       GO TO 23
@@ -2381,7 +1761,8 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
         IJ = IJ - I
         IF (A(IJ).NE.0.0D0) TIM = TI - W(J)**2/A(IJ)
         W(J) = TI
-   30 TI = TIM
+        TI = TIM
+   30 CONTINUE
       GO TO 41
    40 CONTINUE
       MM = 0
@@ -2398,7 +1779,8 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
         IF (I.EQ.N) RETURN
         DO 51 J = IP,N
           IJ = IJ + 1
-   51   A(IJ) = Z(J)/V
+          A(IJ) = Z(J)/V
+   51   CONTINUE
         RETURN
    52   CONTINUE
         TI = TIM
@@ -2406,7 +1788,11 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
         GO TO 66
    53   CONTINUE
         AL = V/A(IJ)
-        IF (MM) 54,54,55
+        IF (MM.GT.0.0D0) THEN
+          GO TO 55
+        ELSE
+          GO TO 54
+        END IF
    54   TI = TIM + V*AL
         GO TO 56
    55   TI = W(I)
@@ -2420,14 +1806,16 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
         DO 61 J = IP,N
           IJ = IJ + 1
           Z(J) = Z(J) - V*A(IJ)
-   61   A(IJ) = A(IJ) + B*Z(J)
+          A(IJ) = A(IJ) + B*Z(J)
+   61   CONTINUE
         GO TO 64
    62   GM = TIM/TI
         DO 63 J = IP,N
           IJ = IJ + 1
           Y = A(IJ)
           A(IJ) = B*Z(J) + Y*GM
-   63   Z(J) = Z(J) - V*Y
+          Z(J) = Z(J) - V*Y
+   63   CONTINUE
    64   CONTINUE
         TIM = TI
         IJ = IJ + 1
@@ -2491,8 +1879,10 @@ SUBROUTINE MC11BD(A,N,IR)
           V = A(IJ)/AA
           DO 102 IK = IJ,NI
             A(JK) = A(JK) - A(IK)*V
-  102     JK = JK + 1
-  103   A(IJ) = V
+            JK = JK + 1
+  102     CONTINUE
+          A(IJ) = V
+  103   CONTINUE
   104 CONTINUE
       IF (A(II).GT.0.0D0) RETURN
       A(II) = 0.D0
@@ -2527,15 +1917,18 @@ SUBROUTINE MC11CD(A,N)
         IP = II + 1
         IF (AA.GT.0.0D0) GO TO 203
         DO 204 IJ = IP,NI
-  204   A(IJ) = 0.D0
+          A(IJ) = 0.D0
+  204   CONTINUE
         GO TO 202
   203   CONTINUE
         DO 201 IJ = IP,NI
           V = A(IJ)*AA
           DO 200 IK = IJ,NI
             A(JK) = A(JK) + A(IK)*V
-  200     JK = JK + 1
-  201   A(IJ) = V
+            JK = JK + 1
+  200     CONTINUE
+          A(IJ) = V
+  201   CONTINUE
   202 CONTINUE
       RETURN
 end subroutine
@@ -2577,9 +1970,11 @@ SUBROUTINE MC11ED(A,N,Z,W,IR)
         V = Z(I)
         DO 401 J = 1,I1
           V = V - A(IJ)*Z(J)
-  401   IJ = IJ + N - J
+          IJ = IJ + N - J
+  401   CONTINUE
         W(I) = V
-  402 Z(I) = V
+        Z(I) = V
+  402 CONTINUE
       Z(N) = Z(N)/A(IJ)
       NP = N + 1
       DO 411 NIP = 2,N
@@ -2590,14 +1985,16 @@ SUBROUTINE MC11ED(A,N,Z,W,IR)
         IJ = II
         DO 410 J = IP,N
           II = II + 1
-  410   V = V - A(II)*Z(J)
-  411 Z(I) = V
+          V = V - A(II)*Z(J)
+  410   CONTINUE
+      Z(I) = V
+  411 CONTINUE
       RETURN
 end subroutine
 
 ! ---------------------------------------------------------------------------------------------
 
-SUBROUTINE MC11FD(A,N,IR)
+SUBROUTINE invfactmat(A,N,IR)
 !
 !    Compute the inverse of a factorized matrix
 !
@@ -2625,9 +2022,11 @@ SUBROUTINE MC11FD(A,N,IR)
           DO 500 K = I,J
             JK = JK + NP - K
             V = V + A(IK)*A(JK)
-  500     IK = IK + 1
+            IK = IK + 1
+  500     CONTINUE
           A(IJ) = -V
-  501   IJ = IJ + 1
+          IJ = IJ + 1
+  501   CONTINUE
   502   CONTINUE
         A(IJ) = 1.0D0/A(IJ)
         II = IJ + 1
@@ -2635,7 +2034,7 @@ SUBROUTINE MC11FD(A,N,IR)
         IJ = I
         IP = I + 1
         NI = N - I
-        DO 511 J = 2,I
+        DO 509 J = 2,I
           V = A(IJ)*AA
           IK = IJ
           K = IJ - IP + J
@@ -2643,9 +2042,12 @@ SUBROUTINE MC11FD(A,N,IR)
           NIP = NI + IJ
           DO 510 JK = K,I1
             A(JK) = A(JK) + V*A(IK)
-  510     IK = IK + NIP - JK
+            IK = IK + NIP - JK
+  510     CONTINUE
           A(IJ) = V
-  511 IJ = IJ + NP - J
+          IJ = IJ + NP - J
+  509   CONTINUE
+  511 CONTINUE
       RETURN
 end subroutine
 
@@ -2913,7 +2315,7 @@ subroutine ilink_n_se( xbeta, x_vbeta_x, prob, se_prob )
 !   prob = output probability = answer resulting from inverting link
 !   se_prob = output standard error of probability
 !
-    use nrtype
+    use constants
     use globevars
     implicit none
     
@@ -3053,752 +2455,6 @@ subroutine huggins_n_hat(nan,ns,np,nx,beta,covariance,p_hat,nhat_v_meth, n_hat,s
 
 end subroutine
 
-! ----------------------------------------------------------------------------------------------
-!
-!   OKAY, I ADMIT I CANNOT REMEMBER WHY I WROTE THESE GOF ROUTINES HERE.  THEY ARE 
-!   ALL IMPLEMENTED IN PURE R CODE IN F.CJS.GOF().  I MUST HAVE STARTED HERE THEN 
-!   SWITCHED TO ALL R.  iN ANY EVENT, I AM COMMENTING THEM ALL OUT, JUST IN CASE I NEED 
-!   THEM LATER.
-!subroutine mragof( nan, ns, hist, p_hat, s_hat, resid_type, &
-!        t4_table, t4_chi, t4_df, &
-!        t5_table, t5_chi, t5_df, &
-!        HL_table, HL_chi, HL_df, &
-!        marray_table, marray_chi, marray_df, &
-!        roc, residuals, released, cell_expected, &
-!        input_trace )
-!!
-!!   Compute various measures of goodness-of-fit for a capture recapture model.
-!!   This routine is designed to be exposed in the DLL, and called after estimation
-!!   in mrawin.
-!!
-!!   Input:
-!!   nan = number of animals = number of rows in capture histories
-!!   ns = number of capture occasions/samples
-!!   hist = capture history matrix (size nan X ns)
-!!   p_hat = matrix of probability of capture estimates (size nanXns, first column not used)
-!!   s_hat = matrix of survival probabilities (size nanXns, last column never used)
-!!   resid_type = Type of residuals to compute.  0 (default) produces Pearson residuals.
-!!           1 produces deviance residuals.
-!!   input_trace = whether to write results to log file. See defn of trace in globevars module.
-!!
-!!   Output:
-!!   t4_chi = Test 4 chi square value.  Test 4 computes an expected number of captures each occasion.
-!!   t4_df = Test 4 degrees of freedom.
-!!   t5_chi = Test 5 Chi square value.  Test 5 computes expected number of captures for each animal, then sums over animals.
-!!   t5_df = Test 5 degrees of freedom.
-!!   HL_chi = Hosmer-Lemeshow chi square value.  Computed over all animals and occasions
-!!   HL_df = Hosmer-Lemeshow degrees of freedom.
-!!   ROC = overall ROC statistic.
-!!   residuals = matrix of residuals (nanXns)
-!!   marray_table = observed, expected, contribution and use cell for marry_test
-!!   marray_chi = chi square statistic for marray test
-!!   marray_df = df for the marray test
-!!   released = number released each occasion.  Part of the m-array
-!!   cell_expected = expected value of each capture-indicator in the capture history, following
-!!       initial encounter.  Return this because its possble to pool over different things
-!!       and construct your own test.
-!!
-!!   Some other gof test, such as the Osius-Rojek, are computed elsewhere (in R or S)
-!!   because it was easier there.
-!!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!!   Can't have this if compiling with G95.  Must use if compiling with Layhey lf95.
-!!    dll_export mragof
-!
-!!    Input variables
-!    integer, intent(inout), target :: nan, ns
-!    integer, intent(inout), dimension(nan,ns), target :: hist
-!    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-!    integer, intent(inout) :: resid_type, input_trace
-!
-!!    Output variables
-!    double precision, intent(inout) :: t4_chi, t4_df, t5_chi, t5_df, HL_chi, HL_df, roc, marray_chi, marray_df
-!    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
-!    double precision, intent(inout), dimension(chi_tab_rows,nan) :: t5_table
-!    double precision, intent(inout), dimension(chi_tab_rows,ns)  :: t4_table
-!    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
-!    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns)  :: marray_table
-!    integer, intent(inout), dimension(ns)  :: released
-!
-!!   Local varaibles
-!    integer, dimension(nan), target :: first, last
-!    integer :: ioerr
-!
-!!   Store input trace value in globevars module
-!    trace = input_trace 
-!    
-!!    ---- Open a log file to store intermediate tables that may be of use
-!    if( trace /= 0 ) then 
-!        OPEN(logfile,FILE="mra_gof.log",status="replace",iostat=ioerr)
-!        if ( ioerr /= 0 ) then
-!            ! Cannot open log file
-!            trace = 0
-!        end if
-!    end if
-!
-!!   ---- Assign pointers
-!    ptr_hist => hist
-!
-!!   ---- Compute locations of first and last capture.  Needed for tests.
-!    call location( nan, ns, hist, first, last)
-!    ptr_first => first
-!    ptr_last => last
-!
-!!   ---- Run tests
-!
-!    call marray_gof(nan, ns, p_hat, s_hat, marray_table, marray_chi, marray_df, released )
-!
-!    call t4_gof(nan, ns, p_hat, s_hat, resid_type, t4_table, t4_chi, t4_df, residuals, cell_expected )
-!
-!    call t5_gof(nan, ns, cell_expected, t5_table, t5_chi, t5_df )
-!
-!    call HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
-!
-!    call roc_gof(nan, ns, cell_expected, roc)
-!
-!    close(logfile)
-!
-!end subroutine
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine marray_gof(nan, ns, p_hat, s_hat, fit_table, fit_chisq, fit_chidf, relese )
-!!
-!!    Purpose: Compute a global goodness of fit statistic using the m-array for
-!!   counts.
-!!
-!!    Input
-!!    nan,ns,p_hat,s_hat
-!!
-!!    Output:
-!!    fit_chisq (scalar), fit_chidf (scalar)
-!!   fit_table = 4X((ns-1)*ns) array containing observed, expected, contribution, and whether
-!!       to use the cell for computing Chi square
-!!   relese = number of releases each occasion
-!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!    integer, intent(inout) :: nan, ns
-!
-!    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-!    double precision, intent(inout) :: fit_chisq, fit_chidf
-!    double precision, intent(inout), dimension(chi_tab_rows,(ns-1)*ns) :: fit_table
-!    integer, intent(inout), dimension(ns) :: relese
-!
-!    integer :: i,j,k, l
-!    double precision :: contrib, o, e
-!
-!    fit_table = 0.D0
-!    fit_chidf = 0.D0
-!    fit_chisq = 0.D0
-!    relese = 0
-!
-!    ! ---- Compute the M array
-!    DO i=1,nan
-!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!            do j = ptr_first(i)-1, ns-1
-!                if (ptr_hist(i,j) >= 1) then
-!                    relese(j) = relese(j) + 1
-!                    do k = j+1, ns
-!                        if (ptr_hist(i,k) >= 1) then
-!                               fit_table(orow,(j-1)*ns+k-1) = fit_table(orow,(j-1)*ns+k-1) + 1.D0
-!                               exit
-!                           end if
-!                    end do
-!                end if
-!             end do
-!        end if
-!    end do
-!
-!    ! ---- Compute expected values for counts in M array
-!    DO i=1,nan
-!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!            do j = ptr_first(i)-1, ns-1
-!                do k = j+1, ns
-!                       ! compute contribution to expected value for count m_(jk)
-!                       contrib = s_hat(i,j)
-!                       do l = j+1, k-1
-!                           contrib = contrib * (1.D0 - p_hat(i,l)) * s_hat(i,l)
-!                       end do
-!                       contrib = contrib * p_hat(i,k)
-!                       fit_table(erow,(j-1)*ns+k-1) = fit_table(erow,(j-1)*ns+k-1) + contrib
-!                end do
-!             end do
-!        end if
-!    end do
-!
-!    ! ---- Compute contribution to chi-square = (obs-exp)^2/exp
-!    do j = 1,ns-1
-!        do k = j+1,ns
-!            o = fit_table(orow,(j-1)*ns+k-1)
-!            e = fit_table(erow,(j-1)*ns+k-1)
-!            fit_table(oerow,(j-1)*ns+k-1) = (o - e)*(o - e) / e
-!            if( e >= chi_ruleofthumb ) then
-!                fit_table(userow, (j-1)*ns+k-1) = 1.D0
-!                fit_chisq = fit_chisq + fit_table(oerow,(j-1)*ns+k-1)
-!                fit_chidf = fit_chidf + 1.D0
-!            end if
-!        end do
-!    end do
-!
-!    if( fit_chidf > 0.D0 ) then
-!        fit_chidf = fit_chidf - 1.D0
-!    end if
-!
-!    ! Write table to the log
-!    if(trace /= 0) then
-!            write(logfile, 100) (i, i=2,ns)
-!        100 format(1x, /" Overall Goodness of Fit Based on M-array"/ &
-!                        " ========================================"/ &
-!                        " OBSERVED", (1x,10(i8,1x)))
-!        300 format(1x, i8,(1x,10(f8.1,1x)))
-!            do j = 1,ns-1
-!                write(logfile, 300) j,(fit_table(orow,(j-1)*ns + k-1), k=2,ns)
-!            end do
-!        
-!            write(logfile, 400) (i, i=2,ns)
-!        400 format(1x, /" EXPECTED", (1x,10(i8,1x)))
-!            do j = 1,ns-1
-!                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
-!            end do
-!        
-!            write(logfile, 600) (i, i=2,ns)
-!        600 format(1x, /" CONTRIB ", (1x,10(i8,1x)))
-!            do j = 1,ns-1
-!                write(logfile, 300) j,(fit_table(oerow,(j-1)*ns + k-1), k=2,ns)
-!            end do
-!        
-!            write(logfile, 800) (i, i=2,ns)
-!        800 format(1x, /" USE CELL", (1x,10(i8,1x)))
-!            do j = 1,ns-1
-!                write(logfile, 300) j,(fit_table(erow,(j-1)*ns + k-1), k=2,ns)
-!            end do
-!        
-!        
-!            WRITE(logfile,700) fit_chisq, fit_chidf
-!        700 FORMAT( " ======================================="// &
-!                     " Overall GOF Test on M-array Chisq =",F14.5, " on ", F7.0, " df")
-!    end if
-!
-!end subroutine
-!
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine HL_gof(nan, ns, cell_expected, HL_table, HL_chi, HL_df )
-!!
-!!    Purpose: Compute Hosmer-Lemeshow goodness of fit statistic.
-!!
-!!    Input
-!!    nan,ns,p_hat,s_hat
-!!
-!!    Output:
-!!   HL_chi = Chi square value of HL statistic, See Hos-Lem, p.147
-!!   HL_df = degrees of freedome for the HL stat
-!!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!    integer, intent(in) :: nan, ns
-!
-!    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-!    double precision, intent(in), dimension(nan,ns) :: cell_expected
-!    double precision, intent(inout) :: HL_chi, HL_df
-!    double precision, intent(inout), dimension(chi_tab_rows,HL_nbins) :: HL_table
-!
-!    integer :: i, j, n, n_per_bin
-!    !double precision :: ee, s
-!    double precision, dimension(nan*ns) :: p
-!    integer, dimension(nan*ns) :: y
-!
-!!   ---- Reformat expected values
-!    n = 0
-!    p = 0.D0
-!    y = -1
-!    do i = 1, nan
-!
-!        ! This code recalculates cell expected values, but we have already done that
-!        ! in routine t4_gof.
-!!        s = 1.D0
-!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!!            do j = ptr_first(i), ns
-!!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!!                n = n + 1
-!!                p(n) = ee
-!!                y(n) = ptr_hist(i,j)
-!!            end do
-!!        end if
-!
-!        ! Find the non-negative expected values, and put them into p and y vectors so can sort properly.
-!        do j = 1, ns
-!            if( cell_expected(i,j) >= 0 ) then
-!                n = n + 1
-!                p(n) = cell_expected(i,j)
-!                y(n) = ptr_hist(i,j)
-!            end if
-!        end do
-!    end do
-!
-!!   ---- Sort the p's and compute HL statistic
-!    call bubble_sort(n,p,y)
-!
-!    n_per_bin = nint( real(n) / real(HL_nbins) )
-!    HL_table = 0.D0
-!    do i = 1,HL_nbins-1
-!        do j = 1, n_per_bin
-!            HL_table(orow, i) = HL_table(orow, i) + y( (i-1)*n_per_bin + j )
-!            HL_table(erow, i) = HL_table(erow, i) + p( (i-1)*n_per_bin + j )
-!        end do
-!    end do
-!    do j = (HL_nbins-1)*n_per_bin + 1, n  ! last cell
-!        HL_table(orow, HL_nbins) = HL_table(orow, HL_nbins) + y( j )
-!        HL_table(erow, HL_nbins) = HL_table(erow, HL_nbins) + p( j )
-!    end do
-!
-!    HL_chi = 0.D0
-!    HL_df  = 0.D0
-!    do i = 1,HL_nbins
-!        if( HL_table(erow,i) >= chi_ruleofthumb ) then
-!            HL_table(oerow,i) = (HL_table(orow,i)-HL_table(erow,i))*(HL_table(orow,i)-HL_table(erow,i)) / HL_table(erow,i)
-!            HL_table(userow,i) = 1.D0
-!            HL_chi = HL_chi + HL_table(oerow,i)
-!            HL_df  = HL_df  + 1.D0
-!        end if
-!    end do
-!    if( HL_df > 0.D0 ) then
-!        HL_df = HL_df - 1.D0
-!    end if
-!
-!
-!    ! Write table to the log
-!    if (trace /= 0) then 
-!            write(logfile, 100) (i, i=1,HL_nbins)
-!        100 format(1x, /" Hosmer-Lemeshow Goodness of Fit Contingency Table"/ &
-!                        " ================================================="/ &
-!                        "Prob.Bin", (1x,10(i8,1x)))
-!            write(logfile, 300) (HL_table(orow,i), i=1,HL_nbins)
-!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-!            write(logfile, 400) (HL_table(erow,i), i=1,HL_nbins)
-!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-!            write(logfile, 500) (HL_table(oerow,i), i=1,HL_nbins)
-!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-!            write(logfile, 600) (HL_table(userow,i), i=1,HL_nbins)
-!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-!        
-!            WRITE(logfile,700) HL_chi, HL_df
-!        700 FORMAT(     " =============================================="// &
-!                         " Hosmer-Lemeshow GOF Chisq =",F14.5, " on ", F7.0, " df")
-!    end if
-!
-!end subroutine
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine bubble_sort(n,x,y)
-!!
-!!   sort the vector x, with parallel vector y
-!!
-!      use constants
-!      implicit none
-!
-!      INTEGER, intent(in) ::  n
-!      double precision, intent(inout), dimension(n) :: x
-!      integer, intent(inout), dimension(n) :: y
-!
-!      integer :: tempi
-!      double precision :: tempr, smallest
-!      integer :: smallpos, cur, i
-!
-!!     This is an implementation of bubble sort, which is slow, but
-!!     easy to code.
-!!     EVENTUALLY, IT WOULD BE NICE TO IMPLEMENT QUICKSORT HERE.
-!
-!      do cur=1,(n-1)
-!
-!         smallest = x(cur)
-!         smallpos = cur
-!
-!         do i = (cur+1),n
-!            if( x(i) < smallest ) then
-!               smallest = x(i)
-!               smallpos = i
-!            endif
-!         end do
-!
-!!        Swap cur and smallest value
-!         if( smallpos .ne. cur ) then
-!            tempr = x(cur)
-!            x(cur) = x(smallpos)
-!            x(smallpos) = tempr
-!
-!            tempi = y(cur)
-!            y(cur) = y(smallpos)
-!            y(smallpos) = tempi
-!         endif
-!
-!      end do
-!
-!end subroutine
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine roc_gof(nan, ns, cell_expected, roc )
-!!
-!!    Purpose: Compute ROC (area under curve) goodness of fit statistic.
-!!
-!!    Input
-!!    nan,ns,p_hat,s_hat
-!!
-!!    Output:
-!!   roc = value of roc statistic, See Hos-Lem, p.160
-!!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!    integer, intent(in) :: nan, ns
-!
-!!    double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-!    double precision, intent(in), dimension(nan,ns) :: cell_expected
-!    double precision, intent(inout) :: roc
-!
-!    integer :: i, j, n_ones, n_zeros
-!    double precision :: ee
-!    double precision, dimension(nan*ns) :: p_ones, p_zeros
-!
-!    double precision, parameter :: near_zero = 1e-6
-!
-!!   ---- Compute expected values
-!    n_ones = 0
-!    n_zeros = 0
-!    p_ones = 0.D0
-!    p_zeros = 0.D0
-!    do i = 1, nan
-!
-!!        s = 1.D0
-!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!            do j = ptr_first(i), ns
-!                if (cell_expected(i,j) > 0) then
-!
-!!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!
-!                    ee = cell_expected(i,j)
-!
-!                    if ( ptr_hist(i,j) >= 1 ) then
-!                        n_ones = n_ones + 1
-!                        p_ones( n_ones ) = ee
-!                    else
-!                        n_zeros = n_zeros + 1
-!                        p_zeros( n_zeros ) = ee
-!                    end if
-!                end if
-!            end do
-!!        end if
-!    end do
-!
-!    ! --- Compute ROC statistic, this is the same as the Mann-Whitney U
-!    roc = 0.D0
-!    do i = 1, n_ones
-!        do j = 1, n_zeros
-!
-!            if( abs(p_ones(i) - p_zeros(j)) <= near_zero ) then
-!                roc = roc + 0.5D0
-!            else if( p_ones(i) > p_zeros(j) ) then
-!                roc = roc + 1.D0
-!            end if
-!
-!        end do
-!    end do
-!    roc = roc / (n_ones * n_zeros)
-!
-!end subroutine
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine t5_gof(nan, ns, cell_expected, fit_table, fit_chisq, fit_chidf )
-!!
-!!    Purpose: Compute goodness of fit statistic across individuals for the model,
-!!
-!!    Input
-!!    nan,ns,
-!!   cell_expected = nanXns matrix containing cell expected values.  Computed in t4_gof.
-!!       cell_expected < 0 for cells that should not be used.
-!!
-!!    Output:
-!!    fit_chisq (scalar), fit_chidf (scalar)
-!!   fit_table = 3Xnan array containing observed, expected, and contribution to Chi square
-!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!    integer, intent(in) :: nan, ns
-!
-!    !double precision, intent(inout), dimension(nan,ns) :: p_hat, s_hat
-!    double precision, intent(in), dimension(nan,ns) :: cell_expected
-!    double precision, intent(inout) :: fit_chisq, fit_chidf
-!    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
-!
-!    integer :: i,j
-!    !double precision :: s, ee, se_ee, lee
-!    double precision :: o, e
-!
-!    fit_table = 0.D0
-!    fit_chidf = 0.D0
-!    fit_chisq = 0.D0
-!    do i = 1, nan
-!
-!        ! This code re-computes the expected value of each cell.  But, already did this
-!        ! in t4_gof, so don't do it again.
-!!        s = 1.D0
-!!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't really need the second condition
-!!            do j = ptr_first(i), ns
-!               ! Recall that ptr_first(i) is set to first estimable capture probability,
-!                   ! which is never 1 and is the first capture occasion AFTER first capture.
-!                   ! Note also that ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
-!!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!!                fit_table(erow,i) = fit_table(erow,i) + ee  ! note first p_hat is never used
-!                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
-!                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
-!!                if ( ptr_hist(i,j) >= 1 ) then
-!!                    fit_table(orow,i) = fit_table(orow,i) + 1.D0
-!!                end if
-!!            end do
-!
-!        ! Compute sums over occasions
-!        o = 0.D0
-!        e = 0.D0
-!        do j = 1, ns
-!            if( cell_expected(i,j) >= 0 ) then
-!                e = e + cell_expected(i,j)
-!                if( ptr_hist(i,j) >= 1 ) then
-!                    o = o + 1.D0
-!                end if
-!            end if
-!        end do
-!        fit_table(orow,i) = o
-!        fit_table(erow,i) = e
-!        fit_table(oerow,i) = (o - e)*(o - e) / e
-!
-!        ! Compute the chi-square statistic
-!        if (fit_table(erow,i) >= chi_ruleofthumb) then
-!            fit_table(userow,i) = 1.D0
-!            fit_chisq = fit_chisq + fit_table(oerow,i)
-!            fit_chidf = fit_chidf + 1.D0
-!        end if
-!
-!    end do
-!
-!    if( fit_chidf > 0.D0 ) then
-!        fit_chidf = fit_chidf - 1.D0
-!    end if
-!
-!    ! Write table to the log
-!    if (trace /= 0) then
-!            write(logfile, 100) (i, i=1,nan)
-!        100 format(1x, /" Test 5 Goodness of Fit Contingency Table"/ &
-!                        " ========================================"/ &
-!                        " Animal", (1x,10(i8,1x)))
-!            write(logfile, 300) (fit_table(orow,i), i=1,nan)
-!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-!            write(logfile, 400) (fit_table(erow,i), i=1,nan)
-!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-!            write(logfile, 500) (fit_table(oerow,i), i=1,nan)
-!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-!            write(logfile, 600) (fit_table(userow,i), i=1,nan)
-!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-!        
-!            WRITE(logfile,700) fit_chisq, fit_chidf
-!        700 FORMAT( " ======================================="// &
-!                     " Test 5 GOF Chisq =",F14.5, " on ", F7.0, " df")
-!    end if
-!    
-!end subroutine
-!
-!
-!
-!! ----------------------------------------------------------------------------------------------
-!
-!subroutine t4_gof(nan,ns,p_hat,s_hat, resid_type, fit_table, fit_chisq, fit_chidf, &
-!    residuals, cell_expected )
-!!
-!!    Purpose: Compute goodness of fit statistic for this model, given estimated p's and s's
-!!   for all animals.
-!!
-!!    Input
-!!    nan,ns,p_hat,s_hat
-!!
-!!    Output:
-!!    fit_chisq (scalar), fit_chidf (scalar), residuals (nan X ns matrix)
-!!   fit_table = 3Xns array containing observed, expected, and contribution to Chi square
-!
-!    use constants
-!    use globevars
-!    implicit none
-!
-!    integer, intent(inout) :: nan, ns, resid_type
-!    double precision, intent(in), dimension(nan,ns) :: p_hat, s_hat
-!
-!    double precision, intent(inout), dimension(nan,ns) :: residuals, cell_expected
-!    double precision, intent(inout) :: fit_chisq, fit_chidf
-!    double precision, intent(inout), dimension(chi_tab_rows,ns) :: fit_table
-!
-!    integer :: i,j,k, end_occasion
-!    double precision :: s, ee, se_ee, lee
-!
-!    residuals = missing
-!    fit_table = 0.D0
-!    cell_expected=-1.D0
-!
-!    do i = 1, nan
-!        s = 1.D0
-!
-!        !write(logfile,*) i, ptr_first(i), (ptr_hist(i,k), k=1,ns)
-!
-!        if (ptr_first(i) > 0 .and. ptr_first(i) <= ns) then  ! don't reall need the second condition
-!            ! Find last occasion we should compute expected value for.  This is ns if animal
-!            ! did not die.  It is occasion with the '2' if animal was death on capture.
-!            end_occasion = ns
-!            do j = ptr_first(i), ns
-!                if( ptr_hist(i,j) >= 2 )then
-!                    end_occasion = j
-!                    exit
-!                end if
-!            end do
-!
-!            ! Compute expected value for each capture indicator between first and end_occasion
-!            do j = ptr_first(i), end_occasion
-!                   ! Recall that ptr_first(i) is set to first estimable capture probability,
-!                   ! which is never 1 and is the first capture occasion AFTER first capture.
-!                   ! Note also tht ptr_first(i) == 0 for first capture at last occasion.  Why I did it this way I don't know.
-!
-!                s = s*s_hat(i,j-1)  ! note last survival is never used
-!                ee = s*p_hat(i,j)   ! note first capture probability never used
-!
-!                ! Save the expected value for the cell
-!                cell_expected(i,j) = ee
-!
-!                ! Error check for the log and sqrt in the residual calc
-!                if ((0.D0 <= ee) .and. (ee <= 1.D0)) then
-!                    se_ee = sqrt(ee*(1.D0 - ee))
-!                else
-!                    se_ee = tiny(ee)   ! This will cause the residual to be huge
-!                end if
-!
-!                if (ee <= 0.D0) then
-!                    lee = tiny(ee)
-!                else if (ee >= 1.D0) then
-!                    lee = 1.D0 - tiny(ee)
-!                else
-!                    lee = ee
-!                end if
-!
-!                fit_table(erow,j) = fit_table(erow,j) + ee  ! note first p_hat is never used
-!
-!                ! Could do another test here, and assign expected values to e(j-ptr_first(i)+2)
-!                ! this would compile obs and expected based on # occasions since first capture, not just capture occasion
-!
-!                if ( ptr_hist(i,j) >= 1 ) then
-!                    fit_table(orow,j) = fit_table(orow,j) + 1.D0
-!                    if (resid_type == 1) then
-!                        residuals(i,j) = sqrt( 2.D0 * abs( log(lee) ))  ! Deviance residual
-!                    else
-!                        residuals(i,j) = (1.D0 - ee) / se_ee  ! Pearson residual
-!                    end if
-!                else
-!                    if (resid_type == 1) then
-!                        residuals(i,j) = -sqrt( 2.D0 * abs( log(1.D0 - lee) ))  ! Deviance residual
-!                    else
-!                        residuals(i,j) = (0.D0 - ee) / se_ee  ! Pearson residual
-!                    end if
-!                end if
-!
-!            end do
-!        end if
-!    end do
-!
-!
-!    !   Combine cells if needed to prep for the chi square test
-!    do j=ns,2,-1
-!        if (fit_table(erow,j) < chi_ruleofthumb) then  ! This is the expected value rule-of-thumb cut off
-!
-!            if ( j > 2 ) then
-!                fit_table(erow,j-1) = fit_table(erow,j) + fit_table(erow,j-1)
-!                fit_table(orow,j-1) = fit_table(orow,j) + fit_table(orow,j-1)
-!                do k = j+1,ns
-!                    fit_table(erow,k-1) = fit_table(erow,k)
-!                    fit_table(orow,k-1) = fit_table(orow,k)
-!                end do
-!                fit_table(erow,ns) = -1.D0
-!                fit_table(orow,ns) = -1.D0
-!            else  ! j == 2
-!                if( ns > 2 ) then
-!                    fit_table(erow,j) = fit_table(erow,j) + fit_table(erow,j+1)
-!                    fit_table(orow,j) = fit_table(orow,j) + fit_table(orow,j+1)
-!                    do k = j+1,ns-1
-!                        fit_table(erow,k) = fit_table(erow,k+1)
-!                        fit_table(orow,k) = fit_table(orow,k+1)
-!                    end do
-!                    fit_table(erow,ns) = -1.D0
-!                    fit_table(orow,ns) = -1.D0
-!                else ! ns <= 2
-!                    ! do nothing.  df will be < 0
-!                end if
-!            end if
-!        end if
-!    end do
-!
-!
-!    ! Compute the chi-square statistic
-!    fit_chidf = 0.D0
-!    fit_chisq = 0.D0
-!    do j=2,ns
-!        if (fit_table(erow,j) > 0.D0) then
-!            fit_table(userow,j) = 1.D0
-!            fit_table(oerow,j) = (fit_table(orow,j) - fit_table(erow,j))*(fit_table(orow,j) - fit_table(erow,j))/fit_table(erow,j)
-!            fit_chisq = fit_chisq + fit_table(oerow,j)
-!            fit_chidf = fit_chidf + 1.D0
-!        else
-!            fit_table(userow,j) = 0.D0    ! don't really need these two assignmenst, redundant give initiation above
-!            fit_table(oerow,j) = 0.D0
-!        end if
-!    end do
-!
-!    if( fit_chidf > 0.D0 ) then
-!        fit_chidf = fit_chidf - 1.D0
-!    end if
-!
-!    ! Write table to the log
-!    if (trace /= 0) then
-!            write(logfile, 100) (j, j=2,ns)
-!        100 format(1x, /" Test 4 Goodness of Fit Contingency Table"/ &
-!                        " ========================================"/ &
-!                        " Occasion",(1x,10(i8,1x)))
-!            write(logfile, 300) (fit_table(orow,j), j=2,ns)
-!        300 format(1x, "Observed",(1x,10(f8.1,1x)))
-!            write(logfile, 400) (fit_table(erow,j), j=2,ns)
-!        400 format(1x, "Expected",(1x,10(f8.1,1x)))
-!            write(logfile, 500) (fit_table(oerow,j), j=2,ns)
-!        500 format(1x, "Contrib.",(1x,10(f8.1,1x)))
-!            write(logfile, 600) (fit_table(userow,j), j=2,ns)
-!        600 format(1x, "Use Cell",(1x,10(f8.1,1x)))
-!        
-!            WRITE(logfile,700) fit_chisq, fit_chidf
-!        700 FORMAT( " ======================================="// &
-!                     " Test 4 GOF Chisq =",F14.5, " on ", F7.0, " df")
-!    end if 
-!
-!end subroutine
-
 
 ! ----------------------------------------------------------------------------------------------
 
@@ -3865,7 +2521,6 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
 !    ierr = error code returned from inverse procedure
 
     use constants
-    use globevars, only: trace
     implicit none
 
     integer, intent(inout) :: np
@@ -3889,37 +2544,14 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
     ! ---- Compute h vector, different step size in each dimension
     !   Note that eps is stored in module constants, and set in routine set_constants
 
-!    if (trace /= 0) then
-!        write(logfile,*)
-!        write(logfile,*) "----- Computing Matrix of 2nd derivatives ----"
-!    end if
-
     ! Note: h can be zero when beta is zero. Beta can be exactly zero when
     !       there is a singularity (overparameterization).
 
-    ! This loop computes additive bits using my method from the SAS manuals. Good agreement
-    ! with MARK for the right eps.  Wrong eps, much different results.
-    !write(logfile,*) "EPS=", eps
-    !do i=1,np
-    !    h(i) = (eps**(0.25)) * beta(i)
-    !    if( abs(h(i)) < eps ) then
-    !        if (beta(i) < 0) then
-    !            h(i) = -eps
-    !        else
-    !            h(i) =  eps
-    !        end if
-    !    end if
-    !end do
-
     ! This loop computes additive bits same way as MARK
-    ! if (trace /= 0) write(logfile,*) "DELTAX=", deltax
     do i = 1, np
         h(i) = (deltax / 2.D0) * (1.D0 + abs(beta(i)))*1.D5
     end do
 
-    !if (trace /= 0) write(logfile,*) " ----- h (=delta) vector -----"
-    !if (trace /= 0) write(logfile,"(1000(g20.10,','))") (h(i), i=1,np)
-    !write(logfile, *) "(input) f= ", f, " CJS_loglik(beta)=", FUNCT(np, beta)
 
     ! ---- Compute hessian using "symetric" derivatives
     do i = 1, np
@@ -3950,37 +2582,17 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
                 b(j) = beta(j) + h(j)
                 f1 = FUNCT(np, b)
 
-                ! debugging
-                !write(logfile,*) " ------- "
-                !write(logfile,*) b
-                !write(logfile,*) f1
-
                 b(i) = beta(i) + h(i)
                 b(j) = beta(j) - h(j)
                 f2 = FUNCT(np, b)
-
-                ! debugging
-                !write(logfile,*) " ------- "
-                !write(logfile,*) b
-                !write(logfile,*) f2
 
                 b(i) = beta(i) - h(i)
                 b(j) = beta(j) + h(j)
                 f3 = FUNCT(np, b)
 
-                ! debugging
-                !write(logfile,*) " ------- "
-                !write(logfile,*) b
-                !write(logfile,*) f3
-
                 b(i) = beta(i) - h(i)
                 b(j) = beta(j) - h(j)
                 f4 = FUNCT(np, b)
-
-                ! debugging
-                !write(logfile,*) " ------- "
-                !write(logfile,*) b
-                !write(logfile,*) f4
 
                 hess(i,j) = (f1 - f2 - f3 + f4) / (4.D0 * h(i) * h(j))
 
@@ -3994,13 +2606,6 @@ subroutine comp_hessian(FUNCT, np, beta, f, hess)
     ! ---- Multiply hessian by -1.
     hess = -1.0D0 * hess
 
-    ! debugging
-    !if (trace >= 1) then
-    !    write(logfile,*) " ----- Matrix of 2nd derivatives, prior to inversion -----"
-    !    do i = 1, np
-    !        write(logfile,"(1000(g20.10,','))") (hess(i,j), j=1,np)
-    !    end do
-    !end if
 
 end subroutine
 
@@ -4012,7 +2617,6 @@ subroutine syminv(b,n,ierr)
 !    Purpose: invert a symmetric matrix
 !
     use constants
-    use globevars, only: trace
     implicit none
 
     integer, intent(inout) :: n
@@ -4076,276 +2680,12 @@ subroutine syminv(b,n,ierr)
 
     !**** singular matrix
     100 continue
-    !if (trace /= 0) write(logfile,"(/a)") " Singular matrix of 2nd derivatives:-"
     b = 0.0
     ierr=1
     return
 
 end subroutine
 
-! -----------------------------------------------------------------------------------
-
-integer function matrank( x, m, n )
-!
-!   Return the rank of matrix x, which is m by n.
-!
-!   This computes SV decomposition, then counts number of SV's > 0.
-!
-!   Key parameter in this is where to cut off SV's.
-    use constants, only : SVD_ZERO, logfile
-    use globevars, only: trace
-
-    implicit none
-
-    integer, intent(in) :: n,m
-    double precision, intent(in), dimension(m,n) :: x
-
-    ! Locals
-    double precision, dimension(n) :: s_vals
-    double precision, dimension(m,n) :: v, a
-    double precision :: max_s
-    integer :: i
-
-    !   Do the singular value decomposition.  All we need is the singular values,
-    !   but I don't know how to shut off computation of a and v.  Contents of a
-    !   are destroyed, so must work on a copy to prevent changes to var-covar in calling routine.
-    a = x
-    call svdcmp_dp(a, s_vals, v, m, n)
-
-    !   Check for convergence
-    if ( s_vals(1) <= -9 ) then
-        matrank = 0
-        return
-    end if
-
-    !if (trace /= 0) then 
-    !    write(logfile,*)
-    !    write(logfile,*) " ----- Singular values of Hessian matrix -----"
-    !    write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
-    !end if
-
-    !   Compute maximum of singular values. Scale singular values by it
-    max_s = maxval( s_vals )
-    s_vals = s_vals / max_s
-
-    !if (trace /= 0) then
-    !    write(logfile,*) " ----- Conditioned Singular values of Hessian matrix -----"
-    !    write(logfile,"(1000(g20.10,','))") (s_vals(i), i=1,n)
-    !    write(logfile,*)
-    !end if
-
-    !   Count number of singular values > zero.
-    matrank = 0
-    do i = 1,n
-        if( s_vals(i) > SVD_ZERO ) then
-            matrank = matrank + 1
-        end if
-    end do
-
-end function
-! ----------------------------------------------------------------------------------
-
-SUBROUTINE svdcmp_dp(a,w,v,m,n)
-!
-!   Do single value decompsition of a matrix.  Here, we are decomposing the
-!   covariance matrix.
-!
-!   I got this routine straight out of Numerical Recipies, Chapter 2.
-!   Here are thier comments.
-!       Given an M x N matrix a, this routine computes its singular value decomposition,
-!       A = UWV'.  The matrix U replaces a on output.  The diagonal matrix of singular
-!       values W is stored in w as a vector of size N.  The NxN matrix V is output as v.
-!
-    !use constants, only : DP, I4B
-    USE nrutil, ONLY : outerprod
-    USE nr, ONLY : pythag
-    IMPLICIT NONE
-    double precision, DIMENSION(m,n), INTENT(INOUT) :: a
-    double precision, DIMENSION(n), INTENT(OUT) :: w
-    double precision, DIMENSION(m,n), INTENT(OUT) :: v
-    integer :: i,its,j,k,l,m,n,nm
-    double precision :: anorm,c,f,g,h,s,scale,x,y,z
-    double precision, DIMENSION(m) :: tempm
-    double precision, DIMENSION(n) :: rv1,tempn
-    !m=size(a,1)
-    !n=assert_eq(size(a,2),size(v,1),size(v,2),size(w),'svdcmp_dp')
-    g=0.0
-    scale=0.0
-    do i=1,n
-        l=i+1
-        rv1(i)=scale*g
-        g=0.0
-        scale=0.0
-        if (i <= m) then
-            scale=sum(abs(a(i:m,i)))
-            if (scale /= 0.0) then
-                a(i:m,i)=a(i:m,i)/scale
-                s=dot_product(a(i:m,i),a(i:m,i))
-                f=a(i,i)
-                g=-sign(sqrt(s),f)
-                h=f*g-s
-                a(i,i)=f-g
-                tempn(l:n)=matmul(a(i:m,i),a(i:m,l:n))/h
-                a(i:m,l:n)=a(i:m,l:n)+outerprod(a(i:m,i),tempn(l:n))
-                a(i:m,i)=scale*a(i:m,i)
-            end if
-        end if
-        w(i)=scale*g
-        g=0.0
-        scale=0.0
-        if ((i <= m) .and. (i /= n)) then
-            scale=sum(abs(a(i,l:n)))
-            if (scale /= 0.0) then
-                a(i,l:n)=a(i,l:n)/scale
-                s=dot_product(a(i,l:n),a(i,l:n))
-                f=a(i,l)
-                g=-sign(sqrt(s),f)
-                h=f*g-s
-                a(i,l)=f-g
-                rv1(l:n)=a(i,l:n)/h
-                tempm(l:m)=matmul(a(l:m,l:n),a(i,l:n))
-                a(l:m,l:n)=a(l:m,l:n)+outerprod(tempm(l:m),rv1(l:n))
-                a(i,l:n)=scale*a(i,l:n)
-            end if
-        end if
-    end do
-    anorm=maxval(abs(w)+abs(rv1))
-    do i=n,1,-1
-        if (i < n) then
-            if (g /= 0.0) then
-                v(l:n,i)=(a(i,l:n)/a(i,l))/g
-                tempn(l:n)=matmul(a(i,l:n),v(l:n,l:n))
-                v(l:n,l:n)=v(l:n,l:n)+outerprod(v(l:n,i),tempn(l:n))
-            end if
-            v(i,l:n)=0.0
-            v(l:n,i)=0.0
-        end if
-        v(i,i)=1.0
-        g=rv1(i)
-        l=i
-    end do
-    do i=min(m,n),1,-1
-        l=i+1
-        g=w(i)
-        a(i,l:n)=0.0
-        if (g /= 0.0) then
-            g=1.0/g
-            tempn(l:n)=(matmul(a(l:m,i),a(l:m,l:n))/a(i,i))*g
-            a(i:m,l:n)=a(i:m,l:n)+outerprod(a(i:m,i),tempn(l:n))
-            a(i:m,i)=a(i:m,i)*g
-        else
-            a(i:m,i)=0.0
-        end if
-        a(i,i)=a(i,i)+1.0
-    end do
-    do k=n,1,-1
-        do its=1,30
-            do l=k,1,-1
-                nm=l-1
-                if ((abs(rv1(l))+anorm) == anorm) exit
-                if ((abs(w(nm))+anorm) == anorm) then
-                    c=0.0
-                    s=1.0
-                    do i=l,k
-                        f=s*rv1(i)
-                        rv1(i)=c*rv1(i)
-                        if ((abs(f)+anorm) == anorm) exit
-                        g=w(i)
-                        h=pythag(f,g)
-                        w(i)=h
-                        h=1.0/h
-                        c= (g*h)
-                        s=-(f*h)
-                        tempm(1:m)=a(1:m,nm)
-                        a(1:m,nm)=a(1:m,nm)*c+a(1:m,i)*s
-                        a(1:m,i)=-tempm(1:m)*s+a(1:m,i)*c
-                    end do
-                    exit
-                end if
-            end do
-            z=w(k)
-            if (l == k) then
-                if (z < 0.0) then
-                    w(k)=-z
-                    v(1:n,k)=-v(1:n,k)
-                end if
-                exit
-            end if
-            if (its == 30) then
-                !call nrerror('svdcmp_dp: no convergence in svdcmp')
-                w(1) = -999
-                return
-            end if
-            x=w(l)
-            nm=k-1
-            y=w(nm)
-            g=rv1(nm)
-            h=rv1(k)
-            f=((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y)
-            g=pythag(f,1.0D0)
-            f=((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
-            c=1.0
-            s=1.0
-            do j=l,nm
-                i=j+1
-                g=rv1(i)
-                y=w(i)
-                h=s*g
-                g=c*g
-                z=pythag(f,h)
-                rv1(j)=z
-                c=f/z
-                s=h/z
-                f= (x*c)+(g*s)
-                g=-(x*s)+(g*c)
-                h=y*s
-                y=y*c
-                tempn(1:n)=v(1:n,j)
-                v(1:n,j)=v(1:n,j)*c+v(1:n,i)*s
-                v(1:n,i)=-tempn(1:n)*s+v(1:n,i)*c
-                z=pythag(f,h)
-                w(j)=z
-                if (z /= 0.0) then
-                    z=1.0/z
-                    c=f*z
-                    s=h*z
-                end if
-                f= (c*g)+(s*y)
-                x=-(s*g)+(c*y)
-                tempm(1:m)=a(1:m,j)
-                a(1:m,j)=a(1:m,j)*c+a(1:m,i)*s
-                a(1:m,i)=-tempm(1:m)*s+a(1:m,i)*c
-            end do
-            rv1(l)=0.0
-            rv1(k)=f
-            w(k)=x
-        end do
-    end do
-    END SUBROUTINE svdcmp_dp
-
-
-! ----------------------------------------------------------------------------------------------
-FUNCTION pythag_dp(a,b)
-!
-!   This function is needed by svdcmp_dp.  Taken from Numerical Recipies
-!   This computes calculate (a^2+b^2)^\{1/2\} without overflow.
-    USE nrtype
-    IMPLICIT NONE
-    double precision, INTENT(IN) :: a,b
-    double precision :: pythag_dp
-    double precision :: absa,absb
-    absa=abs(a)
-    absb=abs(b)
-    if (absa > absb) then
-        pythag_dp=absa*sqrt(1.0+(absb/absa)**2)
-    else
-        if (absb == 0.0) then
-            pythag_dp=0.0
-        else
-            pythag_dp=absb*sqrt(1.0+(absa/absb)**2)
-        end if
-    end if
-    END FUNCTION pythag_dp
 
 ! ----------------------------------------------------------------------------------------------
 
@@ -4357,11 +2697,8 @@ SUBROUTINE TESTS(NAN,NS,IC,NG,IG,VIF,CHIGT,IDFGT)
 !    Note that Bryan Manly and I do these tests slightly differently than RELEASE.
 !    We have different rules about Df and when to pool various tables.
 !
-use constants, only : chat_rot, logfile
-use globevars, only : trace
+use constants, only : chat_rot
 implicit none
-
-    !integer, parameter :: real_dbl=selected_real_kind(p=13,r=200)
 
     integer, intent(in) :: nan, ns, ng
     INTEGER, intent(in), dimension(nan,ns) :: ic
@@ -4387,15 +2724,6 @@ implicit none
 !    estimated variance inflation factor (VIF).
 
 
-!    if (trace /= 0) then 
-!            WRITE(logfile,9005) chat_rot
-!        9005     FORMAT(/"                   TESTS OF ASSUMPTIONS"/ &
-!                   " Only Test2 and Test 3 chi-square component tables"/ &
-!                   " for which all cells are >= ",i2," are used for "/ &
-!                   " calculating totals and the estimate variance"/ &
-!                   " inflation factor (C-hat)."/)
-!            write(logfile,*) "Number of Groups=", ng
-!    end if
     CHIGT=0.0
     IDFGT=0
 
@@ -4427,32 +2755,9 @@ implicit none
 
         IF (NANG > 0) THEN
 
-!            if (trace /= 0) then
-!                WRITE(logfile,9010)
-!    9010              FORMAT(/," FIRST RECAPTURES FROM RELEASES (i.e., m-array)")
-!                write(logfile,9015) "   i  R(i)", (i, i=2,ns)
-!    9015            format(a,1000i4:/(10x,1000i4))
-!                write(logfile,"(1000a1)") ("=", i=1,(4*(ns-1)+10))
-!                       DO I=1,NS-1
-!                           WRITE(logfile,"(I4,I6,1000a4:/(10X,1000a4))",advance="no") I,RELESE(I),(" ", J=2,i)
-!                    WRITE(logfile,"(1000I4:/(10X,1000I4))") (M(I,J), J=i+1,NS)
-!                end do
-!            end if
 
             CALL TEST2(NS,M,CHISQ,IDF,CHITOT,IDFTOT,IUSE)
 
-!            if (trace /= 0) then
-!                WRITE(logfile,9020) (I,CHISQ(I),IDF(I),IUSE(I), I=2,NS-2)
-!    9020              FORMAT(/"                                Used for"/ &
-!                                    "  Release    Chi-Sq        df      C-hat (1 = yes)"/ &
-!                                    " ======================================="/ &
-!                                    (I10,F10.2,2I10))
-    
-    
-!                WRITE(logfile,9030) CHITOT,IDFTOT
-!    9030              FORMAT( " ======================================="/ &
-!                                    "     Total",F10.2,I10)
-!            end if
 
             CHIGT=CHIGT+CHITOT
             IDFGT=IDFGT+IDFTOT
@@ -4464,7 +2769,6 @@ implicit none
 
           DO L = 1, NG
 
-!        if (trace /= 0) WRITE(logfile,"(/A,I3)") " TEST 3 FOR GROUP", L
 
         ! Calculate R and S components for releases 2 to NS-1
         DO J=2,NS-1
@@ -4566,21 +2870,7 @@ implicit none
                 IDFS=1
             END IF
 
-            ! Print tests for Jth release
-!            if (trace /= 0) WRITE(logfile,9040) J,N11,N12,M11,M12,N21,N22,M21,M22,COMPR,COMPS, &
-!                IDFR,IDFS,IUSER,IUSES
-!9040             FORMAT(/" Chi-Squared Tests for Animals Captured in Sample",I3/ &
-!                                "                          R Test       |        S Test"/ &
-!                                "                                       |            Not seen"/ &
-!                                "                        Seen  Not seen | Seen next      next"/ &
-!                                "                       again     again |    sample    sample"/ &
-!                                "============================================================"/ &
-!                                "     Seen before",I12,I10,I12,I10/ &
-!                                " Not seen before",I12,I10,I12,I10/ &
-!                                "============================================================"/ &
-!                                "     Chi-squared",12X,F10.2,12X,F10.2/ &
-!                                "              df",2I22/ &
-!                                " Used in Chat(1)",2I22 )
+
 
             CHIGT=CHIGT+COMPR*IUSER+COMPS*IUSES
             IDFGT=IDFGT+IDFR*IUSER+IDFS*IUSES
@@ -4589,17 +2879,14 @@ implicit none
     end do  ! end Test 3 L loop
 
 
-    ! Print total chi-squared and variance inflation factor
+    ! total chi-squared and variance inflation factor
     IF (IDFGT > 0) THEN
         VIF=CHIGT/IDFGT
-        VIF=MAX(VIF,1.0)
+        VIF=MAX(VIF,1.0D0)
     ELSE
-        VIF=1.0
+        VIF=1.0D0
     ENDIF
 
-!    if (trace /= 0) WRITE(logfile,9050) CHIGT,IDFGT,VIF
-!9050     FORMAT(/" Total chi-squared from used components =",F8.2," with",I3," df"/&
-!                " Variance inflation factor (C-hat) =",F7.2)
 
 end subroutine
 
@@ -4610,8 +2897,7 @@ SUBROUTINE TEST2(NS,M,CHISQ,IDF,CHITOT,IDFTOT,IUSE)
 !
 !     Subroutine to find components 2 to NS-2 of TEST 2 *
 !
-use constants, only : chat_rot, logfile
-use globevars, only : trace
+use constants, only : chat_rot
 
 implicit none
 
@@ -4631,11 +2917,10 @@ implicit none
 
     ! Exit if test not possible
     IF (NS < 4) THEN
-!        if (trace /= 0) WRITE(logfile,"(/A)") " TEST 2 not possible!"
         DO I=2,NS-2
             IUSE(I)=0
             CHISQ(I)=0.0
-            IDF(I)=0.0
+            IDF(I)=0
         end do
         RETURN
     END IF

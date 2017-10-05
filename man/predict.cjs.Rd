@@ -13,7 +13,7 @@
 \arguments{
   \item{object}{CJS capture-recapture model as output from F.cjs.estim }
   \item{\dots}{ Additional arguments to other functions.  Not used, but must be here 
-		for compatability with the generic \code{predict} function.
+		for compatibility with the generic \code{predict} function.
 	    }
 }
 \value{A nan X ns matrix of fitted values (=cell expected value), where 

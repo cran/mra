@@ -15,7 +15,7 @@ tvar(x, nan=attr(x,"nan"), drop.levels=attr(x,"drop.levels"))
     number of sampling occasions.  If not, an error will occur in whatever routine 
     called this function (e.g., \code{F.3d.model.matrix}). }
   \item{nan}{ Number of individuals. Default is to use the 'nan' attribute 
-    of \code{x}.  If \code{nan} is not specifed or is not an attribute of \code{x}, 
+    of \code{x}.  If \code{nan} is not specified or is not an attribute of \code{x}, 
     an error is thrown. }
   \item{drop.levels}{ A vector of integers specifying which levels of a factor 
     to drop.  Only applicable if \code{x} is a factor.  By default, the 
@@ -36,7 +36,7 @@ tvar(x, nan=attr(x,"nan"), drop.levels=attr(x,"drop.levels"))
 
 \value{
     A 2-d matrix of size \code{nan} x \code{length(x)} suitable for passing to the 
-    Fortran DLL of MRA for estimation.  Values within columns are contant, values 
+    Fortran DLL of MRA for estimation.  Values within columns are constant, values 
     across columns vary according to \code{x}. If \code{x} is a factor, this matrix 
     contains 0-1 indicator functions necessary to fit the factor. 
 

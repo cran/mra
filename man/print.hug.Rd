@@ -14,7 +14,7 @@
   \item{x}{ An object of class "hug" produced by F.huggins.estim()}
   \item{\dots}{ Arguments to other functions called by this one. Currently no other 
 		functions are called, so this is not used, but must be here 
-		for compatability with the generic \code{print} function.
+		for compatibility with the generic \code{print} function.
 	    }
 }
 \details{

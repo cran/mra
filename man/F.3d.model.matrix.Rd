@@ -12,7 +12,7 @@ F.3d.model.matrix(formula, d1, d2)
 \arguments{
   \item{formula}{ A formula object specifying covariates in a capture-recapture 
     model.  Must not have a response, i.e., ~, followed by the names 
-    of 2-D arrays or 1-D vectors contained inside callse to \code{ivar} or 
+    of 2-D arrays or 1-D vectors contained inside calls to \code{ivar} or 
     \code{tvar}.  See \code{help(F.cjs.estim)} for examples. }
   \item{d1}{ Magnitude of dimension 1 of the returned matrix.  This is 
     always number of rows in the returned matrix. Usually, \code{d1} = number 
@@ -37,7 +37,7 @@ F.3d.model.matrix(formula, d1, d2)
     A (giant) 2-d matrix containing covariate values suitable for passing to 
     the Fortran code that does the estimation for MRA.  This matrix has all the 
     2-d matrices of the model \code{cbind}-ed together.  It's dimension is NAN x 
-    NS*(number of coefficients).  A convienent way to view the matrix is to assign 
+    NS*(number of coefficients).  A convenient way to view the matrix is to assign 
     a 3-d dimension.  I.e., if \code{x} is the result of a call to this function 
     and there are NX coefficients in the model, 
     then \code{ dim(x) <- c(NAN,NS,NX) } makes a 3-d matrix with NAN rows, NS columns, 

@@ -1,7 +1,11 @@
 # Export all names
 #exportPattern(".")
 
-useDynLib(mra)
+import(stats)
+import(graphics)
+importFrom("utils","packageDescription", "packageVersion")
+
+useDynLib(mra, .registration = TRUE)
 
 export(F.3d.model.matrix)
 export(F.cr.model.matrix)

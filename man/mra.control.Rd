@@ -39,7 +39,7 @@ mra.control(algorithm=1, maxfn=1000, cov.meth=1, trace=0, tol=1e-07 )
         speed is minimal when number of parameters < 15. Method 2 variances are 
         generally very close to method 1 variances, and could be used during initial model 
         fitting stages when exact estimation of variance may not be necessary.    }
-  \item{trace}{Integer controling output of intermediate results. If \code{trace} != 0, 
+  \item{trace}{Integer controlling output of intermediate results. If \code{trace} != 0, 
     a few lines will be written to the R console and a log file (named \code{mra.log}) will be 
     opened in the current directory and details of the fitting process will 
     be written there.  The level of detail written to the log depends on the value of trace. 
@@ -58,7 +58,7 @@ mra.control(algorithm=1, maxfn=1000, cov.meth=1, trace=0, tol=1e-07 )
     other intermediate values are output. 
     
     \code{trace} > 1 probably produces more output than the casual (non-geek statistician) wants 
-    to look at. But, geek statisticans may find \code{trace} > 3 useful for assessing stability and 
+    to look at. But, geek statisticians may find \code{trace} > 3 useful for assessing stability and 
     determining when the routine gets stuck in a local minima. 
 
     }

@@ -7,7 +7,7 @@
 
 \description{
     A utility function to compile a table of fit statistics from a list of MRA fitted objects contained in the 
-    .Globalenv (i.e., 'working') environment.  The table produced by this routine 
+    .GlobalEnv (i.e., 'working') environment.  The table produced by this routine 
     contains model name, fit statistics (AICc or QAICc), and is ranked by
     (sorted by) one of these fit statistics.  
 }
@@ -31,7 +31,7 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc", plausible.p=0.01 )
   \item{plausible.p}{A scalar specifying the cut-point in \code{rank.by} weight to use during 
     determination of 'plausible' models. A model is defined to be 'plausible' if it has \code{rank.by} 
     weight greater than \code{plausible.p} OR if 
-    the model's log-likelihood is greater than the minimum log likelihood amoungst those that 
+    the model's log-likelihood is greater than the minimum log likelihood amongst those that 
     have \code{rank.by} weight greater than \code{plausible.p}.  See explanation of \code{plausible} 
     in Value section below.    
   }
@@ -46,7 +46,7 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc", plausible.p=0.01 )
 
     Fitted objects are pulled from the \code{.GlobalEnv} environment.  Usually, this is the 
     current working directory.  Currently, there is no way to pull fits from another environment, but 
-    a savy R programmer could modify the \code{where} argument of the \code{get} command embedded in 
+    a savvy R programmer could modify the \code{where} argument of the \code{get} command embedded in 
     this routine.
 
 }
@@ -61,7 +61,7 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc", plausible.p=0.01 )
   \item{n.est.parameters}{Number of estimable parameters in the model.  This is MRA's guess at the number 
     of estimable parameters in the model, not length of the coefficient vector.}
   \item{n.coefficients}{Number of coefficients in the model.  This is length of the coefficient 
-    vector without regard to estimability.  If \code{n.coefficients} > \code{n.est.parameters}, 
+    vector without regard to number of estimable parameters.  If \code{n.coefficients} > \code{n.est.parameters}, 
     the model is not full rank, and at least one coefficient is probably not estimable.}
   \item{loglike}{value of the log likelihood evaluated at the maximum likelihood parameters.}  
   \item{aicc}{AIC of the model including the small sample correction = 
@@ -72,13 +72,13 @@ F.fit.table( fits=ls(pattern="^fit"), rank.by= "qaicc", plausible.p=0.01 )
     QAIC + (2*\code{df}*(\code{df}+1))/(\code{nan} - \code{df} - 1)}
   \item{delta.qaicc}{Difference between QAICc for the model and the minimum QAICc in the table.}
   \item{qaicc.wgt}{QAICc model weights.  These weights equal exp(-.5*(delta.qaicc)), scaled to sum to 1.0,}
-  \item{plausible}{Indicates `plausible' models as defined by Bromaghen et al. (2013).  The value 
+  \item{plausible}{Indicates `plausible' models as defined by Bromaghin et al. (2013).  The value 
     in this column is TRUE if the model has \code{rank.by} weight greater than \code{plausible.p} OR if 
-    the model's log-likelihood is greater than the minimum log likelihood amoungst those that 
+    the model's log-likelihood is greater than the minimum log likelihood amongst those that 
     have \code{rank.by} weight greater than \code{plausible.p}. The second condition in this scheme includes a model structure as 'plausible' 
     when its log-likelihood is relatively high but it has been heavily penalized by the number of parameters.  When 
     the likelihood is parameterized to contain two or more linear models, this second condition is a reasonable 
-    criterion when model selection is done in a step-wise fashion on each model separately (see Bromaghen et al., 2013). 
+    criterion when model selection is done in a step-wise fashion on each model separately (see Bromaghin et al., 2013). 
     }
 
 }

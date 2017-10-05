@@ -15,7 +15,7 @@ ivar(x, ns=attr(x,"ns"), drop.levels=attr(x,"drop.levels"))
     number of individuals.  If not, an error will occur in whatever routine 
     called this function (e.g., \code{F.3d.model.matrix}). }
   \item{ns}{ Number of sampling occasions. Default is to use the 'ns' attribute 
-    of \code{x}.  If \code{ns} is not specifed or is not an attribute of \code{x}, 
+    of \code{x}.  If \code{ns} is not specified or is not an attribute of \code{x}, 
     an error is thrown. }
   \item{drop.levels}{ A vector of integers specifying which levels of a factor 
     to drop.  Only applicable if \code{x} is a factor.  By default, the 
@@ -35,7 +35,7 @@ ivar(x, ns=attr(x,"ns"), drop.levels=attr(x,"drop.levels"))
 
 \value{
     A 2-d matrix of size \code{length(x)} x \code{ns} suitable for passing to the 
-    Fortran DLL of MRA for estimation.  Values within rows are contant, values 
+    Fortran DLL of MRA for estimation.  Values within rows are constant, values 
     across rows vary according to \code{x}. If \code{x} is a factor, this matrix 
     contains 0-1 indicator functions necessary to fit the factor. 
 

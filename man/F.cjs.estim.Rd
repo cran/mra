@@ -60,8 +60,7 @@ link="logit", control=mra.control())
 	captured animal (e.g., sex). Group is used only for computing TEST 2 and TEST 3. 
 	TEST 2 and TEST 3 are computed separately for each group. E.g., if group=sex, 
 	TEST 2 and TEST 3 are computed for each sex. TEST 2 and TEST3 are used only
-	to estimate C-hat. Results of TEST 2 and TEST 3 are output only 
-	to the log file ('mrawin.log'). See \code{c.hat} for pooling rules for these 
+	to estimate C-hat. See \code{c.hat} for pooling rules for these 
 	test components to estimate C-hat.}
   \item{nhat.v.meth}{ Integer specifying method for computing variance estimates 
 	of population size estimates. \code{nhat.v.meth} = 1 uses the variance estimator of 
@@ -76,7 +75,7 @@ link="logit", control=mra.control())
 	and could be easily calculated by hand, but 
 	should only be used when there is little capture heterogeneity. }
   \item{c.hat}{ External (override) estimate of variance inflation factor (\code{c.hat}) to use
-	during estimation.  If input value of \code{c.hat} is <= 0, MRAWIN computes 
+	during estimation.  If input value of \code{c.hat} is <= 0, MRA computes 
 	an estimate of variance inflation based on TEST 2 and TEST 3
 	applied to groups (if called for, see \code{group} above) 
 	using Manly, McDonald, and McDonald, 1993, rules for pooling. I.e., 
@@ -84,7 +83,7 @@ link="logit", control=mra.control())
 	>= 5 before that component contributes to the estimate of C-hat.   This rules is  
 	slightly different than program MARK's pooling rules, so MRA's and MARK's
 	estimates of \code{c.hat} will generally be different.  If the input \code{c.hat} > 0, 
-	MRAWIN does not estimate C.hat, and uses the supplied value. }
+	MRA does not estimate C.hat, and uses the supplied value. }
   \item{df}{ External (override) model degrees of freedom to use during estimation.  
 	If \code{df} == NA, the number of parameters is estimated from the rank of the 
 	matrix of 2nd derivatives or Hessian, depending on \code{cov.meth} parameter.  
@@ -115,7 +114,7 @@ link="logit", control=mra.control())
             The inverse "sine" link is \eqn{p = \frac{1 + sin( \eta\pi/8 )}{2}}{p = 0.5*(1 + sin( eta*pi/8 ))} for 
             values of \eqn{\eta}{eta} between 
             -4 and 4.  For values of \eqn{\eta}{eta} < -4, \eqn{p} = 0.  For values of  \eqn{\eta}{eta} > 4, \eqn{p} = 1.
-            Scaling of the sine link was choosen to yield coefficients roughly the 
+            Scaling of the sine link was chosen to yield coefficients roughly the 
             same magnitude as the logit link.
         \item The "hazard" link is \eqn{\eta = log( -log( 1 - p ))}{eta = log( -log( 1 - p ))}, with inverse 
         \eqn{1 - exp( -exp( \eta ))}{1 - exp( -exp( eta ))}.  The value of \eqn{p} from the inverse hazard 

@@ -15,7 +15,7 @@
   \item{width}{The minimum width of columns in the table printed by this routine.} 
   \item{...}{Arguments to other functions called by this one. Currently no other 
 		functions are called, so this is not used, but must be here 
-		for compatability with the generic \code{print} function.
+		for compatibility with the generic \code{print} function.
 	    }
 }
 \details{

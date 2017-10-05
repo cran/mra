@@ -18,7 +18,7 @@
 		class are estimated open population Cormack-Jolly-Seber models produced by F.cjs.estim.}
   \item{ci}{Plot confidence intervals? If ci=TRUE, confidence intervals 
 		around population size or survival estimates are plotted (depending on 'type='), otherwise, only 
-		confidence intervals are not ploted.}
+		confidence intervals are not plotted.}
   \item{smooth}{Smooth estimates of population size? If type="n", smooth=TRUE will produce 
 		a smoothed (supsmu) line through plotted size estimates. Ignored for type="s". }
   \item{occasions}{Vector of occasion numbers to use in plot. If any(occasions <= 0), 
