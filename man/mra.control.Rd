@@ -44,7 +44,7 @@ mra.control(algorithm=1, maxfn=1000, cov.meth=1, trace=0, tol=1e-07 )
     opened in the current directory and details of the fitting process will 
     be written there.  The level of detail written to the log depends on the value of trace. 
     If \code{trace} == 1, details written to the log include TEST2 and TEST3 results used to determine 
-    c-hat, details from the fitting algorithm, the variance covarince matrix, 
+    c-hat, details from the fitting algorithm, the variance covariance matrix, 
     singular values of the VC matrix used to determine \code{df}, and other 
     statistics. If \code{trace} == 2, all trace == 1 details plus the likelihood output is written 
     to the log.  If \code{trace} == 3, all trace == 2 details plus the gradient is written 

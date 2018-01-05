@@ -2,7 +2,7 @@
 !	MRAWIN
 !
 !	This file contains routines to build a DLL which is callable from
-!	S and R to do Capture-recapture analysis.  
+!	S and R to do Capture-recapture analysis.
 !
 
 !   -----------------------
@@ -28,7 +28,7 @@ module constants
     logical, parameter :: central_diffs = .true.  ! whether to take central differences to approximate derivative/gradient.
                               !.False. = one-sided difference which are less accurate, but less costly
                               ! because we don't have to compute log like twice
-                              
+
     double precision, PARAMETER :: PI_D=3.141592653589793238462643383279502884197
 
     double precision, parameter :: missing = -999999.0D0  ! value to signify missing value to S or R. Used, e.g., for residuals.
@@ -37,7 +37,7 @@ module constants
     integer, parameter :: chat_rot = 5 ! C-hat rule of thumb. If all cells in a Test 2 or Test 3 Chi-square table are greater or equal this, use it in computation of c-hat
 
 
-    double precision, parameter :: pi_mult = 4.0D0   ! Applies to sine link only.  Change this to give sine link more range. 
+    double precision, parameter :: pi_mult = 4.0D0   ! Applies to sine link only.  Change this to give sine link more range.
                                                      ! Sine link is 0 when x less than this number.  Sine link is 1 when x greater than this number.
 
 end module
@@ -56,32 +56,28 @@ module globevars
 !    ptr_nan = pointer to number of animals
 !    ptr_nx = pointer to number of capture covariates
 !    ptr_ny = pointer to number of survival covariates
-!    ptr_np = pointer to nx+ny = total number of parameters
 !    ptr_ns = pointer to number of capture occasions
-!    ptr_first = pointer to vector containing first capture occasion, nan X 1
-!    ptr_last = pointer to vector containing last capture occasion, nan X 1
 !    ptr_hist = pointer to capture histories matrix, which is nan X ns
-!    ptr_dead = pointer to vector containing death on capture indicators, nan X ns
 !    ptr_capX = pointer to capture covariate 3-D array, nan X ns X nx
 !    ptr_survX = pointer to survival covariate 3-D array, nan X ns X ny
 
-    integer, pointer :: ptr_nan, ptr_nx, ptr_ny, ptr_ns, ptr_np
+    integer, pointer :: ptr_nan, ptr_nx, ptr_ny, ptr_ns
     double precision, dimension(:,:,:), pointer :: ptr_capX ! Capture covariates for CJS and Huggins
     double precision, dimension(:,:,:), pointer :: ptr_survX ! Survival covariates for CJS
     double precision, dimension(:,:,:), pointer :: ptr_capY ! RE-capture covariates for Huggins
-    integer, dimension(:,:), pointer :: ptr_hist, ptr_dead
-    integer, dimension(:), pointer :: ptr_first, ptr_last, ptr_remove
+    integer, dimension(:,:), pointer :: ptr_hist
+    integer, dimension(:), pointer :: ptr_remove
     double precision, dimension(:), pointer :: ptr_intervals
 
 
-    integer :: link   ! The link function to use. The link is specified in R, before calling this. 
+    integer :: link   ! The link function to use. The link is specified in R, before calling this.
                       ! Valid values are:
                       !     1 = logistic
                       !     2 = cosine
                       !     3 = hazard
                       ! Error checking for valid values should be done in R before calling this routine.
-                      ! If you ever get around to coding the inverse normal distribution, you could add probit. 
-                                            
+                      ! If you ever get around to coding the inverse normal distribution, you could add probit.
+
 
 end module
 
@@ -200,10 +196,8 @@ subroutine cjsmod( nan, &
 
 
 !    Local parameters
-    integer :: i,j
-    integer, target :: np
-    integer, dimension(nan, ns), target :: idead
-    integer, dimension(nan), target :: first, last
+    integer :: i
+    integer :: np
 
 !    ---- Set some program constants at run time
     call set_constants()
@@ -220,29 +214,10 @@ subroutine cjsmod( nan, &
 
 !    ---- Set maximization parameters in globevars
     link = input_link
-    
+
 !    ---- Total number of parameters
     np = nx + ny
-    ptr_np => np
 
-!    ---- Compute first and last occasions of capture
-    call location( nan, ns, hist, first, last)
-    ptr_first => first
-    ptr_last => last
-
-!    ---- Find the dead ones, change their 2's to 1's, save indicator of deadness
-    idead = 0
-    do i = 1, nan
-            do j= 1, ns
-              if (hist(i,j) >= 2 ) then
-                 idead(i,j) = 1
-                 hist(i,j) = 1
-          else if (hist(i,j) < 0) then
-             hist(i,j) = 0   ! Just to be sure we only have 0's and 1's in history matrix
-              end if
-        end do
-    end do
-    ptr_dead => idead
 
 !    ---- If input c_hat is < 0, do Test 2 and 3.
 !        Arrive at a VIF = c_hat for the problem. Output from this routine is
@@ -357,7 +332,7 @@ subroutine hugginsmodel( &
     double precision, intent(inout), dimension(nx) :: p_init
     double precision, intent(inout), dimension(ny) :: c_init
     double precision, intent(inout), dimension(nx+ny) :: beta_tol_vec
-    
+
 
 !    Output parameters
     double precision, intent(inout) :: loglik
@@ -369,15 +344,11 @@ subroutine hugginsmodel( &
 
 !    Local parameters
     integer :: i
-    integer, target :: np
-    integer, dimension(nan), target :: first
+    integer :: np
 
 !    ---- Set maximization parameters in globevars
     link = input_link
 
-
-
-    
 !    ---- Set some program constants at run time
     call set_constants()
 
@@ -394,30 +365,26 @@ subroutine hugginsmodel( &
 
 !    ---- Total number of parameters
     np = nx + ny
-    ptr_np => np
 
-!    ---- Compute first and last occasions of capture, but, for Huggins model, we only need first
-    call first_capture( nan, ns, hist, first)
-    ptr_first => first
 
-!!    ---- Do the estimation using supplied initial values
+!   ---- Do the estimation using supplied initial values
     do i = 1,nx
         parameters(i) = p_init(i)
     end do
     if (ny >= 1) then
-        do i = nx+1, ptr_np
+        do i = nx+1, np
             parameters(i) = c_init(i-nx)
         end do
     end if
 
 
-   
-    call Huggins_estim(ptr_np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
+
+    call Huggins_estim(np, algorithm, cov_meth, parameters, loglik, covariance, exit_code, &
         pos_def_code, maxfn, beta_tol_vec)
 
-    
-    
-    
+
+
+
     ! output from estim is parameters, loglik, covariance, df, and codes.
     ! previous values are destroyed
     if( exit_code == 1 ) then
@@ -426,12 +393,12 @@ subroutine hugginsmodel( &
 
 !         ---- Check for negative variances, and compute standard errors
         se_param = -1.0D0
-        forall( i=1:ptr_np, covariance(i,i) > 0.0D0 )
+        forall( i=1:np, covariance(i,i) > 0.0D0 )
             se_param(i) = sqrt( covariance(i,i) )
         end forall
 
 !        ---- Calculate probability of initial and subsequent captures, and SE for both
-        call huggins_pc_hat(nan,ns,nx,ny,ptr_np,parameters,covariance,p_hat,se_p_hat,c_hat,se_c_hat)
+        call huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c_hat,se_c_hat)
 
 !        ---- Calculate estimate of N-hat and variance.
         call huggins_n_hat(nan,ns,np,nx,parameters,covariance,p_hat,nhat_v_meth, n_hat,se_n_hat,n_ci_low,n_ci_high)
@@ -486,7 +453,7 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
     double precision, intent(inout), dimension(np) :: parameters
     double precision, intent(inout), dimension(np) :: beta_tol_vec ! required precision in each element of parameters
     double precision, intent(inout), dimension(np, np) :: covariance
-    
+
 
     ! Local variables
     double precision, dimension(np) :: g ! gradient vector
@@ -496,8 +463,8 @@ subroutine CJS_estim(np, algorithm, cov_meth, parameters, loglik, covariance, ex
     external CJS_obj  ! objective function for minimization
     integer :: ij, i, j
 
-    ! Local copies of some parameters. Added to get around the following warning: 
-    ! Warning: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)    
+    ! Local copies of some parameters. Added to get around the following warning:
+    ! Warning: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
     !   You can't associate a number, like '1', with an intent(inout) variable in function calls
     double precision :: dfn = -2.0
     integer :: mode = 1
@@ -741,6 +708,7 @@ SUBROUTINE CJS_obj(p,beta,lnlik,grad)
 
     double precision, external :: CJS_loglik
 
+
 !    Calculate the log-likelihood
     lnlik = -1.0D0 * CJS_loglik(p, beta)
 
@@ -748,7 +716,6 @@ SUBROUTINE CJS_obj(p,beta,lnlik,grad)
     call CJS_gradient(p, beta, lnlik, grad)
 
 end subroutine
-
 
 
 ! ------------------------------------------------------------------------------------
@@ -765,8 +732,6 @@ double precision function CJS_loglik(p, beta)
 !    ptr_nx = pointer to number of capture covariates
 !    ptr_ny = pointer to number of survival covariates
 !    ptr_ns = pointer to number of capture occasions
-!    ptr_first = pointer to vector containing first capture occasion, nan X 1
-!    ptr_last = pointer to vector containing last capture occasion, nan X 1
 !    ptr_hist = pointer to capture histories matrix, which is nan X ns
 !    ptr_dead = pointer to vector containing death on capture indicators, nan X 1
 !    ptr_capX = pointer to capture covariate 3-D array, nan X ns X nx
@@ -789,16 +754,22 @@ double precision function CJS_loglik(p, beta)
     double precision :: pij, phiij, sum1, sum2, prod, xlnlik
     double precision, dimension(ptr_ns) :: vpij, vphiij
     !double precision, dimension(ptr_ns,p) :: W
-    integer :: i, j, init1, init2, ii, jj
+    integer :: i, j, init1, init2, ii, jj, hij
+    integer, dimension(ptr_nan) :: first, last
 
     cap_beta = beta(1:ptr_nx)
     surv_beta = beta( (ptr_nx+1):p )
+
+    ! ---- Computer occasions of first and last capture
+    call location( ptr_nan, ptr_ns, ptr_hist, first, last)
+
+    ! ---- Find the dead individuals and change 2's to 1's in histories
 
     ! initialize init1 and init2 to kill uninitialized warning at compile
     ! Assuming first(i) >= 0, these values are always overwritten in do loop below.
     init1 = 1
     init2 = 1
-    
+
     xlnlik=0.0D0
     do i=1,ptr_nan
 
@@ -812,12 +783,12 @@ double precision function CJS_loglik(p, beta)
         ! First(i) is never 1, because subroutine location sets first to 1 occasion
         ! after the first encounter = first estimable capture probability.
         ! Note first(i) = 0 for histories with first capture at the last occasion
-        if (ptr_first(i) == 0) then
+        if (first(i) == 0) then
             init1=ptr_ns+1
             init2=ptr_ns+1
-        else if (ptr_first(i) > 0) then
-            init1=ptr_first(i)
-            init2=ptr_first(i)-1
+        else if (first(i) > 0) then
+            init1=first(i)
+            init2=first(i)-1
         end if
 
 
@@ -840,10 +811,16 @@ double precision function CJS_loglik(p, beta)
 
 
         ! Compute log-likelihood contribution for animal i
-        if ((ptr_first(i) > 0) .and. (ptr_first(i) <= ptr_last(i))) then
-            do j=ptr_first(i),ptr_last(i)
-                sum1=sum1 + ptr_hist(i,j)*log(vpij(j)) + &
-                    (1-ptr_hist(i,j))*log(1.0D0-vpij(j)) + &
+        if ((first(i) > 0) .and. (first(i) <= last(i))) then
+            do j=first(i),last(i)
+                if ( ptr_hist(i,j) >= 1 ) then
+                    hij = 1
+                else
+                    hij = 0
+                end if
+
+                sum1=sum1 + hij*log(vpij(j)) + &
+                    (1-hij)*log(1.0D0-vpij(j)) + &
                     log(vphiij(j-1))
             end do
         end if
@@ -852,13 +829,13 @@ double precision function CJS_loglik(p, beta)
         ! ---- Find second part of likelihood, after last 1 = Chi parameters
         ! Chi = probability of animal i not being seen again
         ! If animal died on capture before release, prob of not seeing again is 1
-        if (ptr_dead(i,ptr_last(i)) == 1) then
+        if (ptr_hist(i,last(i)) >= 2) then
             sum2 = 0.0D0
-        else if ((ptr_last(i) > 0) .and. (ptr_last(i) < ptr_ns)) then
-            sum2=1.0D0-vphiij(ptr_last(i))
-            do ii=ptr_last(i)+1, ptr_ns
+        else if ((last(i) > 0) .and. (last(i) < ptr_ns)) then
+            sum2=1.0D0-vphiij(last(i))
+            do ii=last(i)+1, ptr_ns
                 prod=1.0D0
-                do jj=ptr_last(i),ii-1
+                do jj=last(i),ii-1
                     prod=prod*vphiij(jj)*(1.0D0-vpij(jj+1))
                 end do
                 if (ii < ptr_ns) then
@@ -1000,14 +977,13 @@ double precision function Huggins_loglik(p, beta)
     ! Note: 'p' is for initial capture probability.
     !       'c' is for recapture probability
 
-    !double precision, dimension(ptr_nx) :: p_beta  ! Coefficients in model for initial captures
-    !double precision, dimension(ptr_ny) :: c_beta  ! Coefficients in model for subsequent recaptures
     double precision :: sum_ppart, sum_cpart, xlnlik, denom
     double precision, dimension(ptr_ns) :: vpij, vcij
-    integer :: i, j
+    integer :: i, j, hij
+    integer, dimension(ptr_nan) :: first
 
-    !p_beta = beta(1:ptr_nx)
-    !c_beta = beta( (ptr_nx+1):p )
+!    ---- Compute first and last occasions of capture, but, for Huggins model, we only need first
+    call first_capture( ptr_nan, ptr_ns, ptr_hist, first)
 
     xlnlik=0.0D0
     do i=1,ptr_nan
@@ -1029,21 +1005,27 @@ double precision function Huggins_loglik(p, beta)
         do j=1,ptr_ns
             call procap(vpij(j), i, j, beta, ptr_nx)  ! beta is at least ptr_nx long, so this works
             denom = denom * (1-vpij(j))
-            if( j <= ptr_first(i) ) then
+            if( j <= first(i) ) then
                 sum_ppart=sum_ppart + ptr_hist(i,j)*log(vpij(j)) + &
                     (1-ptr_hist(i,j))*log(1.0D0-vpij(j))
             end if
         end do
-        
+
         denom = log(1-denom)
 
         ! compute probability of recaptures after initial capture.
         ! If ptr_ny == 0, this is same as procap(...)
-        if (ptr_first(i) < ptr_ns) then
-            do j=(ptr_first(i)+1),ptr_ns
+        if (first(i) < ptr_ns) then
+            do j=(first(i)+1),ptr_ns
                 call prorecap(vcij(j), i, j, beta, ptr_nx, ptr_ny, ptr_remove )
-                sum_cpart=sum_cpart + ptr_hist(i,j)*log(vcij(j)) + &
-                    (1-ptr_hist(i,j))*log(1.0D0-vcij(j))
+                if( ptr_hist(i,j) >= 1 ) then
+                    hij = 1
+                else
+                    hij = 0
+                end if
+
+                sum_cpart=sum_cpart + hij*log(vcij(j)) + &
+                    (1-hij)*log(1.0D0-vcij(j))
             end do
         end if
 
@@ -1157,17 +1139,17 @@ subroutine procap(pij, i, j, coef, nx)
     !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
     if( link == 1 ) then
         pij = logit_link( sum )
-        
+
     else if (link == 2) then
         pij = sine_link( sum )
-        
+
     else if (link == 3) then
         pij = hazard_link( sum )
-        
+
     else  ! unknown link function.  This will not bomb gracefully.
         pij = -1.
     end if
-    
+
 
 
 end subroutine
@@ -1222,13 +1204,13 @@ subroutine prorecap(cij, i, j, coef, nx, ny, remove)
     !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
     if( link == 1 ) then
         cij = logit_link( sum )
-        
+
     else if (link == 2) then
         cij = sine_link( sum )
-        
+
     else if (link == 3) then
         cij = hazard_link( sum )
-        
+
     else  ! unknown link function.  This will not bomb gracefully.
         cij = -1.
     end if
@@ -1274,13 +1256,13 @@ subroutine prosur(sij, i, j, coef, ny)
     !   Apply the link function.  Correct link to use was specified by user and stored in 'link' in globevars
     if( link == 1 ) then
         sij = logit_link( sum )
-        
+
     else if (link == 2) then
         sij = sine_link( sum )
-        
+
     else if (link == 3) then
         sij = hazard_link( sum )
-        
+
     else  ! unknown link function.  This will not bomb gracefully.
         sij = -1.
     end if
@@ -1295,12 +1277,12 @@ end subroutine
 
 double precision function logit_link( eta )
 !
-!   Compute the inverse of the logistic link. 
+!   Compute the inverse of the logistic link.
 !   eta is the linear predictor
 !
     use constants
     implicit none
-    
+
     !double precision :: logit_link
     double precision :: eta
     double precision :: z
@@ -1320,21 +1302,21 @@ end function
 
 double precision function sine_link( eta )
 !
-!   Compute the inverse of the cosine link. 
+!   Compute the inverse of the cosine link.
 !   eta is the linear predictor
 !
 
     use constants
     implicit none
-    
+
     double precision :: eta
-    
+
     if( eta < -pi_mult ) then
         sine_link = 0.0D0
     else if( eta > pi_mult ) then
         sine_link = 1.0D0
-    else 
-        sine_link = 0.5D0 + 0.5D0 * sin( (eta * PI_D) / (2.0D0 * pi_mult) ) 
+    else
+        sine_link = 0.5D0 + 0.5D0 * sin( (eta * PI_D) / (2.0D0 * pi_mult) )
     end if
 
 end function
@@ -1343,12 +1325,12 @@ end function
 
 double precision function hazard_link( eta )
 !
-!   Compute the inverse of the hazard link. 
+!   Compute the inverse of the hazard link.
 !   eta is the linear predictor
 !
-    use constants 
+    use constants
     implicit none
-    
+
     !double precision :: hazard_link
     double precision :: eta
     double precision :: z
@@ -1430,7 +1412,7 @@ subroutine first_capture(nan,ns,ic,first)
     first = 0
     do i=1,nan
         do j=1,ns
-            if (ic(i,j) == 1) then   ! Careful here, Must be sure only 0's and 1's
+            if (ic(i,j) >= 1) then   ! Careful here, Anything >1 means capture
                 first(i)=j
                 exit
             end if
@@ -1497,13 +1479,13 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
 
     double precision :: ALPHA,DF,DGS,EPSMCH,FY,GS,GS0,GYS,SIG,TOT,Z,ZZ
     INTEGER :: I,ICON,IFN,IG,IGG,IJ,IR,IS,ITN,J,NN
-    
+
     integer :: One = 1
     integer :: Zero = 0
     double precision :: ZeroD = 0.0
     double precision :: DC
 
-        Z = 0 
+        Z = 0
         DC = epsilon( DC )
         EPSMCH = DC*10.0D0
         NN = N* (N+1)/2
@@ -1519,10 +1501,10 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
           DO 6 J = 1,I
             IJ = IJ - 1
             H(IJ) = 0.0D0
-    6     CONTINUE     
+    6     CONTINUE
           H(IJ) = 1.0D0
-    5   CONTINUE   
-	    
+    5   CONTINUE
+	
         GO TO 15
    10   CONTINUE
         CALL MC11BD(H,N,IR)
@@ -1547,7 +1529,7 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
           W(IS+I) = -G(I)
           GS = GS - G(I)*W(IG+I)
    29   CONTINUE
-        
+
         IEXIT = 2
         IF (GS.GE.0.0D0) GO TO 92
         GS0 = GS
@@ -1566,14 +1548,14 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
           IF (ABS(Z).GE.EPS(I)) ICON = 1
           X(I) = X(I) + Z
    31   CONTINUE
-        
+
         CALL FUNCT(N,X,FY,G)
         IFN = IFN + 1
         GYS = 0.0D0
         DO 32 I = 1,N
           GYS = GYS + G(I)*W(IS+I)
    32   CONTINUE
-        
+
         IF (FY.GE.F) GO TO 40
         IF (ABS(GYS/GS0).LE..9D0) GO TO 50
         IF (GYS.GT.0.0D0) GO TO 40
@@ -1609,7 +1591,7 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
         IF (DGS+ALPHA*GS0.GT.0.0D0) GO TO 60
         SIG = 1.0D0/GS0
         IR = -IR
-        
+
         CALL MC11AD(H,N,G,SIG,W,IR,One,ZeroD)
         DO 52 I = 1,N
           G(I) = W(IGG+I) - W(IG+I)
@@ -1638,9 +1620,9 @@ SUBROUTINE VA09AD(FUNCT,N,X,F,G,H,W,DFN,EPS,MODE,MAXFN,IEXIT)
           G(I) = W(IG+I)
    91   CONTINUE
    90   CONTINUE
-!       The following line returns the number of function evaluations. 
-!       Careful: this means MAXFN must be a variable in the calling routine, don't use a constant like 1000.   
-        MAXFN = IFN    
+!       The following line returns the number of function evaluations.
+!       Careful: this means MAXFN must be a variable in the calling routine, don't use a constant like 1000.
+        MAXFN = IFN
         RETURN
 
 end subroutine
@@ -1745,7 +1727,7 @@ SUBROUTINE MC11AD(A,N,Z,SIG,W,IR,MK,EPS)
       IF (TI.GT.0.0D0) GO TO 22
       IF ((MK-1).GT.0.0D0) THEN
         GO TO 23
-      ELSE 
+      ELSE
         GO TO 40
       END IF
    21 TI = 0.D0
@@ -2101,7 +2083,7 @@ subroutine CJS_probs_and_vars(nan,ns,np,parameters,covariance,p_hat,s_hat, se_p_
             end do
 
             call ilink_n_se( x, SUM, p_hat(i,j), se_p_hat(i,j) )
-                            
+
         end do
     end do
 
@@ -2281,7 +2263,7 @@ subroutine huggins_pc_hat(nan,ns,nx,ny,np,parameters,covariance,p_hat,se_p_hat,c
                 end if
 
                 x = x + parameters(k)*x1
- 
+
                 DO L=1, nx+ny
 
                     if (L <= nx) then
@@ -2318,15 +2300,15 @@ subroutine ilink_n_se( xbeta, x_vbeta_x, prob, se_prob )
     use constants
     use globevars
     implicit none
-    
+
     double precision, intent(in) :: xbeta, x_vbeta_x
     double precision, intent(out) :: prob, se_prob
     double precision, external :: logit_link, sine_link, hazard_link
-    
+
     double precision :: sq_xvx
 
     sq_xvx = sqrt( max( 0.0D0, x_vbeta_x ) )
-    
+
     if( link == 1 ) then
         prob = logit_link( xbeta )
         se_prob = prob * (1.0D0 - prob) * sq_xvx
@@ -2340,11 +2322,11 @@ subroutine ilink_n_se( xbeta, x_vbeta_x, prob, se_prob )
     else if( link == 3 ) then
         prob = hazard_link( xbeta )
         se_prob = prob * exp(xbeta) * sq_xvx
-    else 
+    else
         prob = -1.
         se_prob = -1.
     end if
-    
+
 end subroutine
 
 ! ----------------------------------------------------------------------------------------------

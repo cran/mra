@@ -11,7 +11,7 @@ follow open Cormack-Jolly-Seber (CJS) models.  A super-population
 approach is taken wherein individuals with unique capture and survival 
 probabilities are randomly 'born' into the 
 realized population and captured. Any CJS model, including those with 
-heterogeneous survial or capture probabilities, can be 
+heterogeneous survival or capture probabilities, can be 
 simulated.  Closed populations can also be simulated.   
 }
 
@@ -109,7 +109,7 @@ F.cjs.simulate(super.p, super.s, fit, N1 = 1000,
 
         Because of the super-population approach taken here, it is not possible to specify which individuals 
         have which survival or capture probabilities, nor to guarantee that a certain number of individuals 
-        in the realized population have capture probabilites equal to any particular value.  
+        in the realized population have capture probabilities equal to any particular value.  
 
 }
 
